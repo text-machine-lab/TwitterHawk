@@ -1,6 +1,7 @@
 #-------------------------------------------------------------------------------
 # Name:        features.py
-# Purpose:     Extract features
+#
+# Purpose:     Extract features from tweets
 #
 # Author:      Willie Boag
 #-------------------------------------------------------------------------------
@@ -28,7 +29,7 @@ def features_for_tweet(tweet_repr):
     # data
     begin    = tweet_repr[0]
     end      = tweet_repr[1]
-    sentence = tweet_repr[2].split()
+    sentence = tweet_repr[2]
     phrase   = sentence[begin:end+1]
 
 
@@ -41,14 +42,28 @@ def features_for_tweet(tweet_repr):
     features = {}
 
 
+    '''
+    # Full string
+    features['phrase'] = ' '.join(phrase)
+    '''
+
+
+    '''
+    # Unigram context window
+    window = 4
+
     # Leading unigrams
-    window = 6 # 4
-    for word in sentence[begin-window:begin]:
+    prefix_start = begin-window  if  (begin-window > 0)  else  0
+    prefix = utilities.normalize_phrase(sentence[prefix_start:begin])
+    for word in prefix:
         features[('leading_unigram', word)] = 1
 
+
     # Trailing unigrams
-    for word in sentence[end+1:end+1+window]:
+    suffix = utilities.normalize_phrase(sentence[end+1:end+1+window])
+    for word in suffix:
         features[('trailing_unigram', word)] = 1
+    '''
 
 
     # Term unigrams
@@ -56,14 +71,33 @@ def features_for_tweet(tweet_repr):
         features[('term_unigram', word)] = 1
 
 
+    #print sentence
+    #print phrase                      , ' -> ', normalized
+    #print sentence[prefix_start:begin], ' -> ', prefix
+    #print sentence[end+1:end+1+window], ' -> ', suffix
+    #print ''
+
+
+    '''
     # These don't do much
     features['first_unigram'] = sentence[begin]
-    features[ 'last_unigram'] = sentence[ end ]
+    features[ 'last_unigram'] = sentence[  end]
 
 
-    features['phrase_length'] = len(phrase) / 15
+    features['phrase_length'] = len(phrase)
+    '''
 
 
+    '''
+    if len(normalized) == 0:
+        features['all_stopwords'] = 1
+   '''
+
+
+    return features
+
+
+    '''
     # Feature: Prefixes and Suffixes
     n = [2,3]
     for i,word in enumerate(normalized):
@@ -75,7 +109,7 @@ def features_for_tweet(tweet_repr):
 
             features[ ('prefix',prefix) ] = 1
             features[ ('suffix',suffix) ] = 1
-
+    '''
 
 
 
@@ -96,18 +130,6 @@ def features_for_tweet(tweet_repr):
             is_all_caps = False
             break
     features[ ('all_caps',is_all_caps) ] = 1
-    '''
-
-    '''
-    # Rating: Hardly useful
-    # Feature: All Stopwords? (boolean)
-    sw = utilities.StopWords()
-    is_all_stopwords = True
-    for word in phrase:
-        if not word in sw:
-            is_all_stopwords = False
-            break
-    features[ ('is_all_stopwords',is_all_stopwords) ] = 1
     '''
 
 
@@ -161,8 +183,6 @@ def features_for_tweet(tweet_repr):
         featname = k + '-count'
         features[featname]= v
     '''
-
-    #return features
 
 
     # Feature: Lexicon Features

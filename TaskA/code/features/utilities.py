@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        utilities.py
+#
 # Purpose:     Miscellaneous tools (ex. normalizing tweets)
 #
 # Author:      Willie Boag
@@ -10,6 +11,38 @@ import re
 import string
 import nltk
 
+from emoticons import emoticon_type
+
+
+
+
+def split_hashtag(word):
+
+    """
+    split_hashtag()
+
+    Purpose: Try to build list of words in hashtag concatentation
+             ( ex. "#CurrentEvents"  ->  ["Current", "Events"] )
+
+    @param  word.   A string beginning with a "#"
+    @return         A list of words of the tokenized hashtag word
+    """
+
+    retVal = []
+
+    #print '\t\tHT: ', word
+
+    # Assume CamelCase
+    toks = re.findall('([a-z]+|[A-Z][a-z]+|[0-9]+)', word)
+    if toks:
+        retVal = toks
+        #for o in toks:
+        #    print '\t\t\t', o
+
+    else:
+        retVal = [word]
+
+    return retVal
 
 
 def normalize_phrase(phrase):
@@ -25,12 +58,28 @@ def normalize_phrase(phrase):
 
     retVal = []
 
+
+    # Stem words
+    st = nltk.stem.PorterStemmer()
+
     negated = False
     for word in phrase:
 
+        # Empty word
+        if not word:
+            retVal.append('')
+
         # User mention
-        if word[0] == '@':
+        elif word[0] == '@':
             retVal.append('@someuser')
+
+        # Hashtag
+        elif word[0] == '#':
+            # Split hashtag word
+            toks = split_hashtag(word)
+            for w in toks:
+                w = st.stem(w.lower())
+                retVal.append(w)
 
         # URL
         elif isUrl(word):
@@ -41,11 +90,17 @@ def normalize_phrase(phrase):
             negated = not negated
             retVal.append(word)
 
+        # Emoticon
+        elif emoticon_type(word):
+            if negated: word = word + '_neg'
+            retVal.append(word)
+
         # Simple word
         else:
             if word in StopWords(): continue
 
-            st = nltk.stem.PorterStemmer()
+            word = word.lower()
+            word = word.strip(string.punctuation)  # (major improvements in F1)
             word = st.stem(word)
 
             if negated: word = word + '_neg'

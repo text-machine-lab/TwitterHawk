@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        count_labels.py
+#
 # Purpose:     Count the number of each labels from the SemEval data.
 #
 # Author:      Willie Boag
@@ -9,6 +10,7 @@
 import argparse
 import os
 
+from collections import defaultdict
 
 
 def main():
@@ -24,11 +26,12 @@ def main():
 
 
     # Count how many encountered labels
-    counts = {'objective': 0, 'positive': 0, 'negative': 0, 'neutral': 0, 'objective-OR-neutral':0}
+    counts = defaultdict(lambda:0)
     with open(data,'r') as f:
         for line in f.readlines():
-            label = line.split()[2][1:-1]
+            label = line.split()[2].strip('"')
             counts[label] += 1
+    counts = dict(counts)
 
     # Display results
     print counts

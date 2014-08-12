@@ -31,15 +31,16 @@ class Tweet:
 
         """
 
-        words = line.split()
+        words = line.split('\t')
 
-        if not words: raise BadTweetException
+
+        if words == ['\n']: raise BadTweetException
 
 
         self.SID   = words[0]
         self.UID   = words[1]
-        self.label = words[2][1:-1]
-        self.sent  = ' '.join(words[3:])
+        self.label = words[2].strip('"')
+        self.sent  = words[3]
 
 
         # Adjust if possible
@@ -62,7 +63,7 @@ class Tweet:
         retVal = ''
 
         # Build output
-        retVal += '\t' +       self.SID
+        retVal +=              self.SID
         retVal += '\t' +       self.UID
         retVal += '\t' + '"' + self.label + '"'
         retVal += '\t' +       self.sent

@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        train.py
+#
 # Purpose:     Train an svm
 #
 # Author:      Willie Boag
@@ -7,7 +8,6 @@
 
 
 import os
-import sys
 import glob
 import argparse
 import cPickle as pickle
@@ -20,7 +20,6 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
 
-import helper
 from model import extract_features, extract_labels
 from note import Note
 
@@ -42,7 +41,7 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        default = os.path.join(BASE_DIR, 'data/a.txt')
+        default = os.path.join(BASE_DIR, 'data/train-cleansed-A.txt')
     )
 
     parser.add_argument("-m",
@@ -74,22 +73,12 @@ def main():
 
 
 
-def train(txt_files, model_path, grid=False):
+def train(training_list, model_path, grid=False):
 
-    # ex. {'record-13': 'record-13.txt'}
-    # ex. {'record-13': 'record-13.con'}
-    txt_files_map = helper.map_files(txt_files)
-
-
-    # ex. training_list =  [ ('record-13.txt', 'record-13.con') ]
-    training_list = []
-    for k in txt_files_map:
-            training_list.append(txt_files_map[k])
-
-
+    # Cannot train on empty list
     if not training_list:
         print 'no training files :('
-        sys.exit(1)
+        exit(1)
 
 
     # Read the data into a Note object
@@ -107,12 +96,11 @@ def train(txt_files, model_path, grid=False):
 
 
     # Vectorize feature dictionary
-    # NOTE: import to fit() during training
     vec = DictVectorizer()
     X = vec.fit_transform(feats)
 
 
-    # Grid Search
+    # Grid Search?
     if grid:
         print 'Performing Grid Search'
         clf = do_grid_search(X, Y)

@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        predict.py
+#
 # Purpose:     Predict on input files
 #
 # Author:      Willie Boag
@@ -26,7 +27,8 @@ def main():
     parser.add_argument("-i",
         dest = "txt",
         help = "The files to be predicted on",
-        default = os.path.join(BASE_DIR, 'data/a-dev.txt')
+        default = os.path.join(BASE_DIR, 'data/dev-full-A.txt')
+        #default = os.path.join(BASE_DIR, 'data/sms-test-gold-A.tsv')
     )
 
     parser.add_argument("-m",
@@ -35,23 +37,30 @@ def main():
         default = os.path.join(BASE_DIR, 'models/awesome')
     )
 
+    parser.add_argument("-o",
+        dest = "out",
+        help = "The directory to output predicted files",
+        default = os.path.join(BASE_DIR, 'data/predictions')
+    )
+
 
     # Parse the command line arguments
     args = parser.parse_args()
 
 
     # Decode arguments
-    txt_files = glob.glob(args.txt)
-    model_path  = args.model
+    txt_files  = glob.glob(args.txt)
+    model_path = args.model
+    out_dir    = args.out
 
 
     # Predict
-    predict( txt_files, model_path )
+    predict( txt_files, model_path, out_dir )
 
 
 
 
-def predict( predict_files, model_path ):
+def predict( predict_files, model_path, out_dir ):
 
     if not predict_files:
         print 'no predicting files :('
@@ -87,8 +96,7 @@ def predict( predict_files, model_path ):
         labels = convert_labels( note, labels )
 
         # output predictions
-        pred_dir = os.path.join(BASE_DIR, 'predictions')
-        outfile  = os.path.join(pred_dir, os.path.basename(pred_file))
+        outfile  = os.path.join(out_dir, os.path.basename(pred_file))
         note.write( outfile, labels )
 
 

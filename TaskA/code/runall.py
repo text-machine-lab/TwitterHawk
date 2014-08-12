@@ -1,3 +1,10 @@
+#-------------------------------------------------------------------------------
+# Name:        runall.py
+#
+# Purpose:     Train, predict, and evaluate the model.
+#
+# Author:      Willie Boag
+#-------------------------------------------------------------------------------
 
 
 import train
@@ -15,7 +22,6 @@ def main():
 
     print 'EVAlUATING'
     evaluate.main()
-
 
 
 

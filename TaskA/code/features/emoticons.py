@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        emoticons.py
+#
 # Purpose:     Detect emoticons in words
 #
 # Author:      Willie Boag

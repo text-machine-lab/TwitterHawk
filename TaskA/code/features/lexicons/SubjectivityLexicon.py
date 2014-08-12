@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        SubjectivityLexicon.py
+#
 # Purpose:     Interface for SubjectivityClues data
 #
 # Author:      Willie Boag

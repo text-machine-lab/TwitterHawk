@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        SentimentLexicon.py
+#
 # Purpose:     Interface for HashtagSentiment  and  Sentiment140  data
 #
 # Author:      Willie Boag

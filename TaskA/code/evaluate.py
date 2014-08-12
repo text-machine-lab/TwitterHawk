@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        evaluate.py
+#
 # Purpose:     Evaluate predictions based on precision, recall, and specificity
 #
 # Author:      Willie Boag
@@ -13,12 +14,22 @@ import sys
 import argparse
 import glob
 
-import helper
 import model
 from note import Note
 
 
 BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskA')
+
+
+
+def map_files(files):
+    """Maps a list of files to basename -> path."""
+    output = {}
+    for f in files: #pylint: disable=invalid-name
+        basename = os.path.splitext(os.path.basename(f))[0]
+        output[basename] = f
+    return output
+
 
 
 def main():
@@ -28,7 +39,7 @@ def main():
     parser.add_argument("-t",
         help = "Files containing predictions",
         dest = "txt",
-        default = os.path.join(BASE_DIR, 'predictions/*')
+        default = os.path.join(BASE_DIR, 'data/predictions/*')
     )
 
     parser.add_argument("-r",
@@ -55,7 +66,7 @@ def main():
 
 
     txt_files = glob.glob(args.txt)
-    txt_files_map = helper.map_files(txt_files)
+    txt_files_map = map_files(txt_files)
 
 
     for ref_directory in glob.glob(args.ref):
@@ -66,7 +77,7 @@ def main():
 
         ref_files = os.listdir(ref_directory)
         ref_files = map(lambda f: os.path.join(args.ref, ref_directory, f), ref_files)
-        ref_files_map = helper.map_files(ref_files)
+        ref_files_map = map_files(ref_files)
 
 
         files = []

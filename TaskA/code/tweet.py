@@ -32,7 +32,7 @@ class Tweet:
 
         """
 
-        words = line.split()
+        words = line.strip().split('\t')
 
 
         if not words: raise BadTweetException
@@ -43,24 +43,28 @@ class Tweet:
         self.begin = int(words[2])
         self.end   = int(words[3])
         self.label = words[4]
-        self.sent  = ' '.join(words[5:])
+        self.sent  = words[5].split(' ')
+
+        # Remove "Not Available" tweets
+        if ' '.join(self.sent) == 'Not Available':
+            raise BadTweetException
 
         # Tweets must have legal indices
-        length = len(words[5:])
+        length = len(self.sent)
         if (self.begin >= length) or (self.end >= length):
             print 'ERROR: Bad index'
-            print '\t', self.begin, self.end, zip(range(length),words[5:])
+            print '\t', self.begin, self.end, zip(range(length), self.sent)
             print ''
             raise BadTweetException
 
 
         # Treat 'neutral' as 'objective'
         if self.label == 'objective':
-            self.label = 'neutral'
+            raise BadTweetException
 
         # ensure legal label
-        if self.label not in self.labels_list:
-            self.label = 'neutral'
+        #if self.label not in self.labels_list:
+        #    self.label = 'neutral'
 
 
 
@@ -75,11 +79,11 @@ class Tweet:
         retVal = ''
 
         # Build output
-        retVal += '\t' +      self.SID
-        retVal += '\t' +      self.UID
-        retVal += '\t' + str(self.begin)
-        retVal += '\t' + str(self.end  )
-        retVal += '\t' +     self.label
-        retVal += '\t' +     self.sent
+        retVal +=                 self.SID
+        retVal += '\t' +          self.UID
+        retVal += '\t' +      str(self.begin)
+        retVal += '\t' +      str(self.end  )
+        retVal += '\t' +          self.label
+        retVal += '\t' + ' '.join(self.sent)
 
         return retVal

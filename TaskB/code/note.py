@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        note.py
+#
 # Purpose:     Internal representation of file
 #
 # Author:      Willie Boag

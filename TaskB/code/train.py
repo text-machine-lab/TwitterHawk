@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        train.py
+#
 # Purpose:     Train an svm
 #
 # Author:      Willie Boag
@@ -42,7 +43,7 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        default = os.path.join(BASE_DIR, 'data/TaskB-Training.tsv')
+        default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
     )
 
     parser.add_argument("-m",

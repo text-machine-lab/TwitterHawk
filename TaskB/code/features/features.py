@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        features.py
+#
 # Purpose:     Extract features
 #
 # Author:      Willie Boag
@@ -46,6 +47,9 @@ def features_for_tweet(tweet):
     # These don't do much
     features['first_unigram'] = phrase[ 0]
     features[ 'last_unigram'] = phrase[-1]
+
+
+    return features
 
 
     features['phrase_length'] = len(phrase) / 15

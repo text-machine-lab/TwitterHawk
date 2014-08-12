@@ -1,6 +1,7 @@
 #-------------------------------------------------------------------------------
 # Name:        OpinionLexicon.py
-# Purpose:     Interface for OpinionLexiocn data
+#
+#  Purpose:     Interface for OpinionLexiocn data
 #
 # Author:      Willie Boag
 #-------------------------------------------------------------------------------

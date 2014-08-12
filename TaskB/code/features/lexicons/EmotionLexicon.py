@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        EmotionLexicon.py
+#
 # Purpose:     Interface for Hashtag Emotion Lexicon data
 #
 # Author:      Willie Boag

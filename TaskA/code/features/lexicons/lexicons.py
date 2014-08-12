@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:        lexicons.py
+#
 # Purpose:     Interface for lexicon data
 #
 # Author:      Willie Boag
