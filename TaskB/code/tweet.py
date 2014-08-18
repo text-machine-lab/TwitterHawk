@@ -26,8 +26,8 @@ class Tweet:
 
         Purpose: Parse a line of a SemEval file and store the internal representation.
 
-        File format:         SID             UID       start-ind    end-ind     label                sentence
-                 ex. 209814454601396224    207002102     0            5       objective   Venus will pass in front of the Sun.
+        File format:         SID          UID        label        sentence
+                 ex. 111344599699693568	338069340	neutral	   michael jackson - hollywood tonight http://t.co/s6n3HJj
 
         """
 
@@ -39,9 +39,13 @@ class Tweet:
 
         self.SID   = words[0]
         self.UID   = words[1]
-        self.label = words[2].strip('"')
-        self.sent  = words[3]
+        self.label = words[2]
+        self.sent  = words[3].strip()
 
+
+        # Remove "Not Available" tweets
+        if self.sent == 'Not Available':
+            raise BadTweetException
 
         # Adjust if possible
         if self.label == 'objective-OR-neutral': self.label = 'neutral'
@@ -63,9 +67,9 @@ class Tweet:
         retVal = ''
 
         # Build output
-        retVal +=              self.SID
-        retVal += '\t' +       self.UID
-        retVal += '\t' + '"' + self.label + '"'
-        retVal += '\t' +       self.sent
+        retVal +=         self.SID
+        retVal += '\t' +  self.UID
+        retVal += '\t' +  self.label
+        retVal += '\t' +  self.sent
 
         return retVal

@@ -7,10 +7,11 @@
 #-------------------------------------------------------------------------------
 
 
+from HTMLParser import HTMLParser
+
 import emoticons
 import utilities
 from lexicons.lexicons import lexHTS, lexS140, lexOpi, lexSubj, lexEmo
-
 
 
 
@@ -26,12 +27,18 @@ def features_for_tweet(tweet):
     """
 
     # Tweet representation
+    h = HTMLParser()
+    tweet = h.unescape(tweet)
     phrase = tweet.split()
 
 
+    print '\n\n\n'
+    print ' '.join(phrase)
+
+
     # Normalize tweet
-    #normalized = utilities.normalize_phrase(phrase)
-    normalized = phrase
+    normalized = utilities.normalize_phrase(phrase)
+    #normalized = phrase
 
 
     # Feature: Dummy ( always have >0 dimensions )
@@ -42,6 +49,12 @@ def features_for_tweet(tweet):
     # Term unigrams
     for word in normalized:
         features[('term_unigram', word)] = 1
+
+
+    print normalized
+
+
+    return features
 
 
     # These don't do much

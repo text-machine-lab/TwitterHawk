@@ -43,7 +43,8 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
+        #default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
+        default = os.path.join(BASE_DIR, 'data/sample-urls.txt')
     )
 
     parser.add_argument("-m",

@@ -7,6 +7,8 @@
 #-------------------------------------------------------------------------------
 
 
+from collections import defaultdict
+
 from tweet import Tweet, BadTweetException
 
 
@@ -34,23 +36,22 @@ class Note:
         Purpose: Read the file and store all tweets
         """
 
-        success = 0
-        total = 0
+        labels = defaultdict(lambda:0)
 
         with open(txt) as f:
             for line in f:
-                total += 1
-
                 # Ignore tweets that are ill-formatted
                 try:
                     # Add tweet representation to the list
                     twt = Tweet(line)
                     self.tweets.append( twt )
-                    success += 1
+
+                    labels[twt.label] += 1
+
                 except BadTweetException, e:
                     continue
 
-        #print '\tsuccess: %d / %d' % (success,total)
+        print '\t\t', dict(labels)
 
 
 

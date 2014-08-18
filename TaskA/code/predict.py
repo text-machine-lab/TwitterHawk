@@ -27,7 +27,7 @@ def main():
     parser.add_argument("-i",
         dest = "txt",
         help = "The files to be predicted on",
-        default = os.path.join(BASE_DIR, 'data/dev-full-A.txt')
+        default = os.path.join(BASE_DIR, 'data/test-gold-A.txt')
         #default = os.path.join(BASE_DIR, 'data/sms-test-gold-A.tsv')
     )
 

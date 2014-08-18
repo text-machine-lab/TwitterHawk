@@ -29,7 +29,7 @@ def main():
     parser.add_argument("-t",
         help = "Files containing predictions",
         dest = "txt",
-        default = os.path.join(BASE_DIR, 'predictions/*')
+        default = os.path.join(BASE_DIR, 'data/predictions/*')
     )
 
     parser.add_argument("-r",
@@ -75,7 +75,9 @@ def main():
             if k in ref_files_map:
                 files.append((txt_files_map[k], ref_files_map[k]))
 
-        #print files
+
+        print files
+
 
         # Compute the confusion matrix
         labels = model.labels_map   # hash tabble: label -> index

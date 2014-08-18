@@ -45,6 +45,7 @@ def split_hashtag(word):
     return retVal
 
 
+
 def normalize_phrase(phrase):
 
     """
@@ -77,8 +78,16 @@ def normalize_phrase(phrase):
         elif word[0] == '#':
             # Split hashtag word
             toks = split_hashtag(word)
+            HT_negated = False
             for w in toks:
-                w = st.stem(w.lower())
+                #w = st.stem(w.lower())
+                w = w.lower()
+
+                if isNegation(w):
+                    HT_negated = not HT_negated
+                else:
+                    if HT_negated: w = w + '_neg'
+
                 retVal.append(w)
 
         # URL
@@ -106,7 +115,8 @@ def normalize_phrase(phrase):
             if negated: word = word + '_neg'
             retVal.append(word)
 
-    return retVal
+
+    return set(retVal)
 
 
 

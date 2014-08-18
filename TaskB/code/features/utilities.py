@@ -11,6 +11,121 @@ import re
 import string
 import nltk
 
+from BeautifulSoup import BeautifulSoup
+from HTMLParser    import HTMLParser
+
+from UrlWrapper import urlopen
+from emoticons import emoticon_type
+
+
+
+def normalize_url(url):
+
+    """
+    normalize_url()
+
+    Purpose: Resolve URL to gain additional insight into url (domain name, subject title, etc)
+
+    @param url.  A tiny url from a tweet.
+    @return      A list of unigrams from the subject title
+    """
+
+    return ['http//someurl']
+
+    print '\t', url
+
+    # Return a set of unigrams
+    retVal = []
+
+
+    # Follow url
+    try:
+        uf  = urlopen(url)
+        content = uf.read()
+        link = uf.geturl()
+        soup = BeautifulSoup(content)
+
+    except Exception,e:
+        print 'Read Error -- ', e, ': ', url
+        print
+        return []
+
+
+    # Get title
+    if soup.title:
+        st = nltk.stem.PorterStemmer()
+        h = HTMLParser()
+
+        negated = False
+        title = h.unescape( soup.title.getText(' ') )
+        for w in title.split():
+
+            if not w: continue
+
+            if isNegation(w):
+                negated = True
+                retVal.append(w)
+                continue
+
+            w = w.lower()
+            w = w.strip(string.punctuation)
+
+            if negated:
+                retVal += '_neg'
+                negated = False
+
+            if w in StopWords():
+                negated = False
+                continue
+
+            w = st.stem(w)
+            if w: retVal.append(w)
+
+
+    # Get url base
+    match = re.search('(?:[^\.]*\.)*(.*)\.(?:com|org|gov|net|co|tv|biz)', link)
+    if match:
+        base = match.groups(0)
+        retVal.append('urlbase-%s' % base)
+    else:
+        pass
+        #print url
+        #print 'link: ', link
+        #print 'base: ', 'COULDNT'
+        #print
+
+
+    print '\t', retVal
+    print
+
+    return retVal
+
+
+
+def split_hashtag(word):
+
+    """
+    split_hashtag()
+
+    Purpose: Try to build list of words in hashtag concatentation
+             ( ex. "#CurrentEvents"  ->  ["Current", "Events"] )
+
+    @param  word.   A string beginning with a "#"
+    @return         A list of words of the tokenized hashtag word
+    """
+
+    full = [word]
+
+    # Assume CamelCase
+    toks = re.findall('([A-Z][a-z]+|[0-9]+)', word)
+    if toks: return full + toks
+
+    # Greedy word split
+    # TaskB/etc/dictionary.txt
+
+    # Give up
+    return full
+
 
 
 def normalize_phrase(phrase):
@@ -26,32 +141,73 @@ def normalize_phrase(phrase):
 
     retVal = []
 
+
+    # Stem words
+    st = nltk.stem.PorterStemmer()
+
     negated = False
     for word in phrase:
 
+        # Empty word
+        if not word:
+            negated = False
+            retVal.append('')
+
         # User mention
-        if word[0] == '@':
+        elif word[0] == '@':
             retVal.append('@someuser')
+
+        # Hashtag
+        elif word[0] == '#':
+            # Split hashtag word
+            print '\t', word
+            toks = split_hashtag(word)
+            HT_negated = False
+            for w in toks:
+                w = st.stem(w.lower())
+                w = w.lower()
+
+                if isNegation(w):
+                    HT_negated = not HT_negated
+                else:
+                    if HT_negated:
+                        w = w + '_neg'
+                        negated = False
+
+                retVal.append(w)
 
         # URL
         elif isUrl(word):
-            retVal.append('http://someurl')
+            data = normalize_url(word)
+            for w in data:
+                retVal.append(w)
 
         # Negation
         elif isNegation(word):
             negated = not negated
             retVal.append(word)
 
-        # Simple word
-        else:
-            if word in StopWords(): continue
-
-            st = nltk.stem.PorterStemmer()
-            word = st.stem(word)
-
-            if negated: word = word + '_neg'
+        # Emoticon
+        elif emoticon_type(word):
+            #if negated: word = word + '_neg'
             retVal.append(word)
 
+        # Simple word
+        else:
+            if not word: continue
+
+            #if word in StopWords(): continue
+
+            word = word.lower()
+            word = word.strip(string.punctuation)
+            word = st.stem(word)
+
+            if negated:
+                word = word + '_neg'
+                negated = False
+            retVal.append(word)
+
+    #return set(retVal)
     return retVal
 
 

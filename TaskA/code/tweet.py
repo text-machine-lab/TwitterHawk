@@ -43,7 +43,12 @@ class Tweet:
         self.begin = int(words[2])
         self.end   = int(words[3])
         self.label = words[4]
-        self.sent  = words[5].split(' ')
+
+        # Robust against case where tweet actually contains tab character
+        self.sent = []
+        for segment in words[5:]:
+            self.sent += segment.split(' ')
+
 
         # Remove "Not Available" tweets
         if ' '.join(self.sent) == 'Not Available':
