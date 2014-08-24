@@ -16,14 +16,17 @@ Installation
         - numpy
         - scikit-learn
         - scipy
+        - nltk
+        - nose
+        - BeautifulSoup
+        - twitter
 
 
     Must create a BISCUIT_DIR environment variable.
 
 
-    Get a dictionary from http://www.math.sjsu.edu/~foster/dictionary.txt
-
-    Eventually, may use trie for Hashtag Segmentation dictionary lookup.
+    Get a dictionary from /usr/share/dict/words (or anywhere else, really)
+    Trie for hashtag segmentation from https://github.com/fnl/patricia-trie
 
 
 
@@ -43,13 +46,7 @@ Task A - Contextual Polarity Disambiguation
 
 Task B - Message Polarity Classification
 
-    Currently, uses normalized unigrams for an F1 of 57.6.
-
-    Working on: 
-
-        - Hashtag Segmentation
-        - POS tagging & IOB chunking (with twitter_nlp)
-        - meta data features of tweets (ex. retweet count)
+    Achieves F1 of .638
 
 
 
