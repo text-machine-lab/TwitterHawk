@@ -97,7 +97,7 @@ def main():
             rnote.read( ref )
 
             # Get corresponding concept labels (prediction vs. actual)
-            for c, r in zip( cnote.conlist(), rnote.conlist() ):
+            for c, r in zip( cnote.label_list(), rnote.label_list() ):
                 confusion[labels[r]][labels[c]] += 1
 
 

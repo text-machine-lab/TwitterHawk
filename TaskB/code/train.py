@@ -22,7 +22,8 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
 
 import helper
-from model import extract_features, extract_labels
+from features.features import FeaturesWrapper
+from model import extract_labels
 from note import Note
 
 
@@ -43,8 +44,9 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        #default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
-        default = os.path.join(BASE_DIR, 'data/sample-urls.txt')
+        default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
+        #default = os.path.join(BASE_DIR, 'data/sample.txt')
+        #default = os.path.join(BASE_DIR, 'data/twitter-dev-gold-B.tsv')
     )
 
     parser.add_argument("-m",
@@ -103,7 +105,8 @@ def train(txt_files, model_path, grid=False):
 
 
     # Data -> features
-    feats  = extract_features(notes)
+    feat_obj = FeaturesWrapper()
+    feats  = feat_obj.extract_features(notes)
     labels = extract_labels(notes)
     Y = np.array(  labels  )
 

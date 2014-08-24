@@ -37,8 +37,8 @@ class Tweet:
         if words == ['\n']: raise BadTweetException
 
 
-        self.SID   = words[0]
-        self.UID   = words[1]
+        self.sid   = words[0]
+        self.uid   = words[1]
         self.label = words[2]
         self.sent  = words[3].strip()
 
@@ -67,8 +67,8 @@ class Tweet:
         retVal = ''
 
         # Build output
-        retVal +=         self.SID
-        retVal += '\t' +  self.UID
+        retVal +=         self.sid
+        retVal += '\t' +  self.uid
         retVal += '\t' +  self.label
         retVal += '\t' +  self.sent
 

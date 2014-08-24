@@ -7,6 +7,7 @@
 #-------------------------------------------------------------------------------
 
 
+import sys, os
 import re
 import string
 import nltk
@@ -15,7 +16,16 @@ from BeautifulSoup import BeautifulSoup
 from HTMLParser    import HTMLParser
 
 from UrlWrapper import urlopen
-from emoticons import emoticon_type
+from read_config import enabled_modules
+
+
+# Add lexicon code to path
+if enabled_modules['lexicons']:
+    sys.path.append( os.path.join(enabled_modules['lexicons'] ,'code') )
+else:
+    sys.path.append( os.path.join(os.getenv('BISCUIT_DIR') ,'lexicons/code') )
+import emoticons
+
 
 
 
@@ -102,33 +112,7 @@ def normalize_url(url):
 
 
 
-def split_hashtag(word):
-
-    """
-    split_hashtag()
-
-    Purpose: Try to build list of words in hashtag concatentation
-             ( ex. "#CurrentEvents"  ->  ["Current", "Events"] )
-
-    @param  word.   A string beginning with a "#"
-    @return         A list of words of the tokenized hashtag word
-    """
-
-    full = [word]
-
-    # Assume CamelCase
-    toks = re.findall('([A-Z][a-z]+|[0-9]+)', word)
-    if toks: return full + toks
-
-    # Greedy word split
-    # TaskB/etc/dictionary.txt
-
-    # Give up
-    return full
-
-
-
-def normalize_phrase(phrase):
+def normalize_phrase(phrase, hashtag=False, url=False, stem=False):
 
     """
     normalize()
@@ -159,52 +143,59 @@ def normalize_phrase(phrase):
 
         # Hashtag
         elif word[0] == '#':
-            # Split hashtag word
-            print '\t', word
-            toks = split_hashtag(word)
-            HT_negated = False
-            for w in toks:
-                w = st.stem(w.lower())
-                w = w.lower()
+            if hashtag:
+                toks = split_hashtag(word)
+                HT_negated = False
+                for w in toks:
+                    w = st.stem(w.lower())
+                    w = w.lower()
 
-                if isNegation(w):
-                    HT_negated = not HT_negated
-                else:
-                    if HT_negated:
-                        w = w + '_neg'
-                        negated = False
+                    if isNegation(w):
+                        HT_negated = not HT_negated
+                    else:
+                        if HT_negated:
+                            w = w + '_neg'
+                            negated = False
 
-                retVal.append(w)
+                    retVal.append(w)
+
+            else:
+                retVal.append(word)
 
         # URL
         elif isUrl(word):
-            data = normalize_url(word)
+            if url:
+                data = normalize_url(word)
+            else:
+                data = ['http://someurl']
+
             for w in data:
                 retVal.append(w)
 
         # Negation
         elif isNegation(word):
-            negated = not negated
+            negated = True
             retVal.append(word)
 
         # Emoticon
-        elif emoticon_type(word):
-            #if negated: word = word + '_neg'
+        elif emoticons.emoticon_type(word):
+            if negated: word = word + '_neg'
             retVal.append(word)
 
         # Simple word
         else:
-            if not word: continue
+            if word[-1] in ',.:;!?':
+                negated = False
 
             #if word in StopWords(): continue
 
-            word = word.lower()
-            word = word.strip(string.punctuation)
-            word = st.stem(word)
+            if stem:
+                word = word.lower()
+                word = word.strip(string.punctuation)
+                word = st.stem(word)
 
-            if negated:
-                word = word + '_neg'
-                negated = False
+            if negated: word = word + '_neg'
+
             retVal.append(word)
 
     #return set(retVal)
@@ -334,19 +325,3 @@ def isElongatedPunctuation(word):
     # No matches
     return False
 
-
-
-def stripPunctuation(phrase):
-
-    """
-    stripPunctuation()
-
-    Purpose: NOT SURE
-
-    @param phrase.  A list of words from a tweet
-    @return         A list of words from a tweet without punctuation
-    """
-
-    punc = string.punctuation.replace('#','')
-
-    return [  word.strip(punc)  for  word  in  phrase  ]

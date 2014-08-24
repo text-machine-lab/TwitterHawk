@@ -11,8 +11,9 @@ import urllib2
 import re
 import os
 import sys
-#import cPickle as pickle
-import pickle
+
+from cache import Cache
+
 
 
 BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
@@ -32,32 +33,8 @@ class MyUrl:
 
 
 
-# Cache queries
-class UrlCache:
-    def __init__(self):
-        try:
-            self.filename = os.path.join(BASE_DIR,'etc/url_cache')
-            self.cache = pickle.load( open( self.filename ,"rb" ) )
-        except IOError:
-            self.cache = {}
-
-    def has_key(self, key):
-        return self.cache.has_key( str(key) )
-
-    def add_map(self, key, value):
-        self.cache[ str(key) ] = value
-
-    def get_map(self, key):
-        return self.cache[ str(key) ]
-
-    def __del__(self):
-        import pickle                                       # Not sure why, put the 'pickle' module gets set to None
-        pickle.dump(self.cache, open(self.filename,"wb"))
-
-
-
 # Create UrlCache object
-cache = UrlCache()
+cache = Cache('url')
 
 
 

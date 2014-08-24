@@ -11,7 +11,8 @@ import glob
 import argparse
 import cPickle as pickle
 
-from model import extract_features, extract_labels
+from features.features import FeaturesWrapper
+from model import extract_labels
 from model import convert_labels
 from note import Note
 
@@ -80,7 +81,8 @@ def predict( predict_files, model_path, out_dir ):
         note.read(pred_file)
 
         # Data -> features
-        feats  = extract_features([note])
+        feat_obj = FeaturesWrapper()
+        feats  = feat_obj.extract_features([note])
         labels = extract_labels([note])
 
 
@@ -90,7 +92,7 @@ def predict( predict_files, model_path, out_dir ):
 
 
         # predict
-        labels =  svc.predict(vectorized)
+        labels = svc.predict(vectorized)
         labels = convert_labels( note, labels )
 
         # output predictions

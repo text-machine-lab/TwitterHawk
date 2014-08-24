@@ -64,50 +64,38 @@ class Note:
 
 
 
-
-    def txtlist(self):
+    def text_list(self):
 
         """
-        Note::txtlist()
+        Note::text_list()
 
         Purpose: Return a list of full text of tweets
         """
 
-        # Get each (begin,end,sentence) triple
-        retVal = []
-        for tweet in self.tweets:
-            retVal.append(tweet.sent)
-
-        return retVal
+        return [  tweet.sent  for  tweet  in  self.tweets  ]
 
 
 
-
-    def conlist( self ):
+    def label_list( self ):
 
         """
-        Note::conlist()
+        Note::label_list()
 
         Purpose: Return a list labels for the tweets
         """
 
-        retVal = []
-
-        # Get each (begin,end,sentence) triple
-        for tweet in self.tweets:
-            retVal.append( tweet.label )
-
-        return retVal
+        return [  tweet.label  for  tweet  in  self.tweets  ]
 
 
 
-
-    def __iter__(self):
+    def sid_list( self ):
 
         """
-        Note::__iter__()
+        Note::sid_list()
 
-        Purpose: Allow Note objects to be iterable.
+        Purpose: Return a list status IDs for the tweets
         """
 
-        return iter(self.tweets)
+        return [  tweet.sid  for  tweet  in  self.tweets  ]
+
+
