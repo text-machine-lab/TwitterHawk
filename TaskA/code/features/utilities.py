@@ -7,10 +7,15 @@
 #-------------------------------------------------------------------------------
 
 
+import sys
+import os
 import re
 import string
 import nltk
 
+
+# Add lexicon code to path
+sys.path.append( os.path.join(os.getenv('BISCUIT_DIR'),'lexicons/code') )
 from emoticons import emoticon_type
 
 

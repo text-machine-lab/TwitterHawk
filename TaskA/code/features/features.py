@@ -7,12 +7,19 @@
 #-------------------------------------------------------------------------------
 
 
-import emoticons
-import utilities
-from lexicons.lexicons import lexHTS, lexS140, lexOpi, lexSubj, lexEmo
 
+import sys
+import os
 from collections import defaultdict
 
+
+import utilities
+
+
+# Add lexicon code to path
+sys.path.append( os.path.join(os.getenv('BISCUIT_DIR'),'lexicons/code') )
+from lexicons import lexHTS, lexS140, lexOpi, lexSubj, lexEmo
+import emoticons
 
 
 def features_for_tweet(tweet_repr):
@@ -42,9 +49,6 @@ def features_for_tweet(tweet_repr):
     normalized = utilities.normalize_phrase(phrase)
     for word in normalized:
         features[('term_unigram', word)] = 1
-
-
-    return features
 
 
     # Feature: Lexicon Features
@@ -245,7 +249,6 @@ def lexicon_features(phrase):
     features = {}
 
 
-    '''
     # Features: Opinion & Subjectivity Classifications
     for word in phrase:
         lexOpi_label = lexOpi.lookup(word)
@@ -253,7 +256,6 @@ def lexicon_features(phrase):
 
         lexSubj_label = lexSubj.lookup(word).prior
         features[ ('lexSubj_unigram',lexSubj_label) ] = 1
-    '''
 
 
     # Features: Sentiment Scores
@@ -264,21 +266,25 @@ def lexicon_features(phrase):
         lexS140_uni_scores.append( lexS140.lookupUnigram(word).score )
 
 
+    '''
     print '\tphrase: ', phrase
     print '\tHTS :   ', lexHTS_uni_scores
     print '\tS140:   ', lexS140_uni_scores
     print
+    '''
 
 
     polarities = polarity_count('HTS', lexHTS_uni_scores)
 
+
+    '''
     print polarities
     print
 
     return features
-
-
     '''
+
+
     # Three most influential sentiments
     inf_uni_HTS = sorted(lexHTS_uni_scores,key=abs,reverse=True)
     for i,score in enumerate(inf_uni_HTS[:3]):
@@ -289,7 +295,7 @@ def lexicon_features(phrase):
     for i,score in enumerate(inf_uni_S140[:3]):
         featname = 'lexS140_unigram-influential-%d' % i
         features[featname] = score
-    '''
+
 
     # Features: Emotion Scores
     lexEmo_uni_scores = []
@@ -304,20 +310,17 @@ def lexicon_features(phrase):
         features[featname] = score
 
 
-    '''
     # Average scores
-    features['avg_HTS' ] = max(inf_HTS ) / (sum(inf_HTS ) + 1e-5)
-
-    features['avg_S140'] = max(inf_S140) / (sum(inf_S140) + 1 e-5)
+    features['avg_HTS' ] = max(inf_uni_HTS ) / (sum(inf_uni_HTS ) + 1e-5)
+    features['avg_S140'] = max(inf_uni_S140) / (sum(inf_uni_S140) + 1e-5)
 
 
     emo_scores = defaultdict(lambda:[])
-    for e,score in reversed(inf_Emo):
+    for e,score in reversed(inf_uni_Emo):
         emo_scores[e].append(score)
     for e,scores in emo_scores.items():
         featname = 'avg_Emo-' + e
         features[featname] = max(scores ) / (sum(scores ) + 1e-5)
-    '''
 
 
 
@@ -344,8 +347,8 @@ def lexicon_features(phrase):
     '''
     # Average scores
     #print inf_HTS
-    features['avg_bigram_HTS' ] = max(inf_HTS ) / (sum(inf_HTS ) + 1e-5)
-    features['avg_bigram_S140'] = max(inf_S140) / (sum(inf_S140) + 1e-5)
+    features['avg_bigram_HTS' ] = max(inf_bi_HTS ) / (sum(inf_bi_HTS ) + 1e-5)
+    features['avg_bigram_S140'] = max(inf_bi_S140) / (sum(inf_bi_S140) + 1e-5)
     '''
 
 
