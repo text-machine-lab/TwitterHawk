@@ -17,21 +17,16 @@ reverse_labels_map = { v:k for k,v in labels_map.items()}
 
 
 
-def extract_features(notes):
+def extract_features(data):
 
     """
     Model::extract_features()
 
     Purpose: Generate features for the input data
 
-    @param notes. A list of note objects that store the tweet data
+    @param data.  A list of data points
     @return       A list of feature dictionaries
     """
-
-    # data   - A list of list of the medical text's words
-    data = []
-    for note in notes:
-        data += note.txtlist()
 
     # list of feature dictionaries
     feats_map = lambda t: features_for_tweet(t)

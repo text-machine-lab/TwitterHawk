@@ -72,6 +72,11 @@ def lexicon_features(phrase):
     lexHTS_uni_scores  = [   lexHTS.lookupUnigram(w).score  for  w  in  phrase  ]
     lexS140_uni_scores = [  lexS140.lookupUnigram(w).score  for  w  in  phrase  ]
 
+    '''
+    for w,s in zip(phrase,lexHTS_uni_scores):
+        print s, w
+    exit()
+    '''
 
     # Three most influential sentiments
     inf_uni_HTS = sorted(lexHTS_uni_scores,key=abs,reverse=True)
@@ -89,7 +94,6 @@ def lexicon_features(phrase):
 
 
 
-    '''
     pos_uni_HTS_scores  = [  s  for  s  in   lexHTS_uni_scores  if  s > 0  ]
     pos_uni_S140_scores = [  s  for  s  in  lexS140_uni_scores  if  s > 0  ]
 
@@ -106,7 +110,6 @@ def lexicon_features(phrase):
     if len(pos_uni_S140_scores):
         features['S140-uni-max'      ] = max(pos_uni_S140_scores)
         features['S140-uni-last_pos'] = pos_uni_S140_scores[-1]
-    '''
 
 
 
@@ -164,7 +167,6 @@ def lexicon_features(phrase):
     '''
 
 
-    '''
     # Result: Good (doesn't mix well with other bigram features)
     pos_bi_HTS_scores  = [  s  for  s  in   lexHTS_bi_scores  if  s > 0  ]
     pos_bi_S140_scores = [  s  for  s  in  lexS140_bi_scores  if  s > 0  ]
@@ -180,7 +182,6 @@ def lexicon_features(phrase):
     if len(pos_bi_S140_scores):
         features['S140-bi-max'      ]  = max(pos_bi_S140_scores)
         features['S140-bi-last_pos'] = pos_bi_S140_scores[-1]
-    '''
 
 
     #print features

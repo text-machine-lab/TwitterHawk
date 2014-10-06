@@ -52,9 +52,9 @@ def main():
         labels.append(label)
 
 
-    tdata = TwitterData()
+
+    tdata = TwitterData(sids)
     #stats(sids,labels)
-    features_list = tdata.features(sids)
 
     #print features_list
 
@@ -62,7 +62,7 @@ def main():
 
 class TwitterData:
 
-    def __init__(self, sids=None):
+    def __init__(self, sids=[]):
         # Tweet cache
         self.cache = Cache('twitter_data')
 
@@ -84,8 +84,11 @@ class TwitterData:
         # Compile list of tweets that need to be quieried with API
         uncached = [  sid  for  sid  in  sids  if not self.cache.has_key(sid)  ]
 
+        #print 'uncached: ', len(uncached)
+
         # Use API to lookup uncached tweets
         if uncached:
+            #print uncached
             partial = interface_twitter.resolve(uncached)
             for sid,twt in zip(uncached,partial):
                 self.cache.add_map(sid,twt)

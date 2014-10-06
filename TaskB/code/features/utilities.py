@@ -15,8 +15,9 @@ import nltk
 from BeautifulSoup import BeautifulSoup
 from HTMLParser    import HTMLParser
 
-from UrlWrapper import urlopen
 from read_config import enabled_modules
+from nlp          import nlp
+
 
 
 # Add lexicon code to path
@@ -28,91 +29,17 @@ import emoticons
 
 
 
+def tokenize(text, nlp=None):
 
-def normalize_url(url):
-
-    """
-    normalize_url()
-
-    Purpose: Resolve URL to gain additional insight into url (domain name, subject title, etc)
-
-    @param url.  A tiny url from a tweet.
-    @return      A list of unigrams from the subject title
-    """
-
-    return ['http//someurl']
-
-    print '\t', url
-
-    # Return a set of unigrams
-    retVal = []
-
-
-    # Follow url
-    try:
-        uf  = urlopen(url)
-        content = uf.read()
-        link = uf.geturl()
-        soup = BeautifulSoup(content)
-
-    except Exception,e:
-        print 'Read Error -- ', e, ': ', url
-        print
-        return []
-
-
-    # Get title
-    if soup.title:
-        st = nltk.stem.PorterStemmer()
-        h = HTMLParser()
-
-        negated = False
-        title = h.unescape( soup.title.getText(' ') )
-        for w in title.split():
-
-            if not w: continue
-
-            if isNegation(w):
-                negated = True
-                retVal.append(w)
-                continue
-
-            w = w.lower()
-            w = w.strip(string.punctuation)
-
-            if negated:
-                retVal += '_neg'
-                negated = False
-
-            if w in StopWords():
-                negated = False
-                continue
-
-            w = st.stem(w)
-            if w: retVal.append(w)
-
-
-    # Get url base
-    match = re.search('(?:[^\.]*\.)*(.*)\.(?:com|org|gov|net|co|tv|biz)', link)
-    if match:
-        base = match.groups(0)
-        retVal.append('urlbase-%s' % base)
+    # Use twitter_nlp tokenzier, if available
+    if nlp:
+        return nlp.tokens(text)
     else:
-        pass
-        #print url
-        #print 'link: ', link
-        #print 'base: ', 'COULDNT'
-        #print
-
-
-    print '\t', retVal
-    print
-
-    return retVal
+        return text.split()
 
 
 
-def normalize_phrase(phrase, hashtag=False, url=False, stem=False):
+def normalize_phrase(phrase, stem=False):
 
     """
     normalize()
@@ -130,80 +57,57 @@ def normalize_phrase(phrase, hashtag=False, url=False, stem=False):
     st = nltk.stem.PorterStemmer()
 
     negated = False
+    end_negated = False
     for word in phrase:
 
         # Empty word
         if not word:
             negated = False
-            retVal.append('')
+
+        # Emoticon
+        elif emoticons.emoticon_type(word):
+            if negated: word += '_neg'
+            retVal.append(word)
+
+        # Punctuation
+        elif all( [ (c in string.punctuation) for c in word ] ):
+            negated = False
+            # Emoticon
 
         # User mention
         elif word[0] == '@':
+            negated = False
             retVal.append('@someuser')
 
         # Hashtag
         elif word[0] == '#':
-            if hashtag:
-                toks = split_hashtag(word)
-                HT_negated = False
-                for w in toks:
-                    w = st.stem(w.lower())
-                    w = w.lower()
-
-                    if isNegation(w):
-                        HT_negated = not HT_negated
-                    else:
-                        if HT_negated:
-                            w = w + '_neg'
-                            negated = False
-
-                    retVal.append(w)
-
-            else:
-                retVal.append(word)
+            negated = False
+            retVal.append(word.lower())
 
         # URL
-        elif isUrl(word):
-            if url:
-                data = normalize_url(word)
-            else:
-                data = ['http://someurl']
-
-            for w in data:
-                retVal.append(w)
+        elif is_url(word):
+            negated = False
+            retVal.append('http://someurl')
 
         # Negation
-        elif isNegation(word):
+        elif is_negation(word):
             negated = True
-            retVal.append(word)
-
-        # Emoticon
-        elif emoticons.emoticon_type(word):
-            if negated: word = word + '_neg'
             retVal.append(word)
 
         # Simple word
         else:
-            if word[-1] in ',.:;!?':
-                negated = False
-
-            #if word in StopWords(): continue
-
             if stem:
                 word = word.lower()
-                word = word.strip(string.punctuation)
+                #word = word.strip(string.punctuation)
                 word = st.stem(word)
-
             if negated: word = word + '_neg'
-
             retVal.append(word)
 
-    #return set(retVal)
     return retVal
 
 
 
-def isUrl(word):
+def is_url(word):
 
     """
     isUrl()
@@ -224,7 +128,7 @@ def isUrl(word):
 
 
 
-def isNegation(word):
+def is_negation(word):
 
     """
     isNegation()
@@ -275,7 +179,7 @@ def StopWords():
 
 
 
-def isElongatedWord(word):
+def is_elongated_word(word):
 
     """
     isElongatedWord()
@@ -301,7 +205,7 @@ def isElongatedWord(word):
 
 
 
-def isElongatedPunctuation(word):
+def is_elongated_punctuation(word):
 
     """
     isElongatedPunctuation()

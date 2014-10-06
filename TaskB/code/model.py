@@ -36,12 +36,11 @@ def extract_labels(notes):
 
 
 
-def convert_labels(note, labels):
+def convert_labels(labels):
 
     """
     Model::convert_labels()
 
-    @param note.   A Note object that contains the prediction data
     @param labels. numpy.array of labels predicted by classifier
 
     Purpose: translate labels_list into a readable format

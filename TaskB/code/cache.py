@@ -34,13 +34,16 @@ class Cache:
             self.cache = {}
 
     def has_key(self, key):
-        return self.cache.has_key( str(key) )
+        skey = unicode(key)
+        return self.cache.has_key( skey )
 
     def add_map(self, key, value):
-        self.cache[ str(key) ] = value
+        skey = unicode(key)
+        self.cache[ skey ] = value
 
     def get_map(self, key):
-        return self.cache[ str(key) ]
+        skey = unicode(key)
+        return self.cache[ skey ]
 
     def __del__(self):
         import os, pickle

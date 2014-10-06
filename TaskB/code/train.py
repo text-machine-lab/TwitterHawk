@@ -23,7 +23,7 @@ from sklearn.metrics import f1_score
 
 import helper
 from features.features import FeaturesWrapper
-from model import extract_labels
+from model import labels_map
 from note import Note
 
 
@@ -45,6 +45,7 @@ def main():
         dest = "txt",
         help = "The files that contain the training examples",
         default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
+        #default = os.path.join(BASE_DIR, 'data/sample6500.txt')
         #default = os.path.join(BASE_DIR, 'data/sample.txt')
         #default = os.path.join(BASE_DIR, 'data/twitter-dev-gold-B.tsv')
     )
@@ -72,43 +73,55 @@ def main():
     model_path = args.model
 
 
-    # Build model
-    vec, svc = train(txt_files, model_path, grid)
-
-
-
-
-def train(txt_files, model_path, grid=False):
-
-    # ex. {'record-13': 'record-13.txt'}
-    # ex. {'record-13': 'record-13.con'}
-    txt_files_map = helper.map_files(txt_files)
-
-
-    # ex. training_list =  [ ('record-13.txt', 'record-13.con') ]
-    training_list = []
-    for k in txt_files_map:
-            training_list.append(txt_files_map[k])
-
-
-    if not training_list:
+    if not txt_files:
         print 'no training files :('
         sys.exit(1)
 
 
     # Read the data into a Note object
     notes = []
-    for txt in training_list:
+    for txt in txt_files:
         note_tmp = Note()
         note_tmp.read(txt)
         notes.append(note_tmp)
 
+    # Get data from notes
+    X = []
+    Y = []
+    for n in notes:
+        X += zip(n.sid_list(), n.text_list())
+        Y += n.label_list()
+
+    # Build model
+    train(X, Y, model_path, grid)
+
+
+
+
+def train(X, Y, model_path=None, grid=False):
+
+    """
+    train()
+
+    Purpose: Train a classifier on annotated data
+
+    @param X.            list of (tweet-ID, tweet-text) pairs
+    @param Y.            list of labels for each pair in X
+    @param model_path.   filename of where to pickle Model object
+    @param grid_search.  boolean indicating whether to perform grid search
+
+    @return              A (svc,vec) pair, where:
+                           svc is the classifer
+                           vec is the feature vectorizer
+    """
+
 
     # Data -> features
     feat_obj = FeaturesWrapper()
-    feats  = feat_obj.extract_features(notes)
-    labels = extract_labels(notes)
-    Y = np.array(  labels  )
+    feats  = feat_obj.extract_features(X)
+
+    labels = [ labels_map[y] for y in Y ]
+    Y = np.array( labels )
 
 
     # Vectorize feature dictionary
@@ -127,11 +140,12 @@ def train(txt_files, model_path, grid=False):
 
 
     # Save model
-    with open(model_path+'.dict' , 'wb') as f:
-        pickle.dump(vec, f)
+    if model_path:
+        with open(model_path+'.dict' , 'wb') as f:
+            pickle.dump(vec, f)
 
-    with open(model_path+'.model', 'wb') as f:
-        pickle.dump(clf, f)
+        with open(model_path+'.model', 'wb') as f:
+            pickle.dump(clf, f)
 
 
     # return model

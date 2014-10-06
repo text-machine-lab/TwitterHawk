@@ -28,6 +28,17 @@ def resolve(tagger, data):
     @return              A list of dictionaries of the tagger's output.
     '''
 
+    #print data
+
+    # FIXME - Automatically detect tweets with encoding errors & re-encode them
+    # Data format that cn be printed
+    #data = [ d.encode('UTF-8') for d in data ]
+    
+    # FIX for difficult formats
+    data = [ d.encode('utf-8', 'ignore') for d in data ]
+    data = [ d.decode('ascii', 'ignore') for d in data ]
+
+    #print data
 
     # Write list to file in order to feed it to twitter_nlp
     tmp_out = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/etc/nlp_tmp_file.txt')
@@ -59,7 +70,11 @@ def resolve(tagger, data):
 
 
     # Error from twitter_nlp?
-    if status: raise Exception('Error with tagger. Invocation\n%s' % cmd)
+    if status: 
+        print >>sys.stderr, 'EROOR WITH TWITTER_NLP'
+        print >>sys.stderr, stream
+        exit()
+        raise Exception('Error with tagger. Invocation\n%s' % cmd)
 
     return [ twt.split() for twt in tagged ]
 

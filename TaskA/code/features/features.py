@@ -51,12 +51,15 @@ def features_for_tweet(tweet_repr):
         features[('term_unigram', word)] = 1
 
 
+    #return features
+
+
     # Feature: Lexicon Features
     feats = lexicon_features(phrase)
     features.update(feats)
 
 
-    return features
+    #return features
 
 
 
@@ -90,6 +93,7 @@ def features_for_tweet(tweet_repr):
     #print ''
     '''
 
+    #return features
 
 
     # These don't do much
@@ -125,12 +129,13 @@ def features_for_tweet(tweet_repr):
 
 
 
+    #return features
 
 
     # Note: Bigrams assume order, but 'normalized' is basically a set
     # Feature: Bigrams
     for i in range(len(phrase) - 1):
-        ngram = ' '.join(normalized[i:i+2])
+        ngram = ' '.join(phrase[i:i+2])
         features[ ('bigram',ngram) ] = 1
 
 

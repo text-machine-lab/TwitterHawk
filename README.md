@@ -26,6 +26,8 @@ Installation
 
 
     Get a dictionary from /usr/share/dict/words (or anywhere else, really)
+    Online dictionary: https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt
+
     Trie for hashtag segmentation from https://github.com/fnl/patricia-trie
 
 

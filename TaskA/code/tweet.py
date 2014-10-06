@@ -57,9 +57,9 @@ class Tweet:
         # Tweets must have legal indices
         length = len(self.sent)
         if (self.begin >= length) or (self.end >= length):
-            print 'ERROR: Bad index'
-            print '\t', self.begin, self.end, zip(range(length), self.sent)
-            print ''
+            #print 'ERROR: Bad index'
+            #print '\t', self.begin, self.end, zip(range(length), self.sent)
+            #print ''
             raise BadTweetException
 
 

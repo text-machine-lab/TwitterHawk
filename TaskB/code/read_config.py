@@ -19,7 +19,7 @@ f = open(filename, 'r')
 
 
 enabled_modules = {}
-module_list = [ 'twitter_nlp', 'twitter_data', 'lexicons', 'hashtag' ]
+module_list = [ 'twitter_nlp', 'twitter_data', 'lexicons', 'hashtag', 'url' ]
 
 for line in f.readlines():
     words = line.split()

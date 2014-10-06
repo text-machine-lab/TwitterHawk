@@ -80,8 +80,8 @@ def split_stream(word):
 
     Purpose: Given a stream of characters, split it into a list of words
 
-    @param word.  A stream of characters
-    @return       A list of valid words.
+    @param word.     A stream of characters
+    @return          A list of valid words.
     """
 
     word = word.strip('#').lower()

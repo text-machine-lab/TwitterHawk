@@ -20,7 +20,7 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
 
-from model import extract_features, extract_labels
+from model import extract_features, labels_map
 from note import Note
 
 
@@ -67,31 +67,56 @@ def main():
     model_path = args.model
 
 
-    # Build model
-    vec, svc = train(txt_files, model_path, grid)
-
-
-
-
-def train(training_list, model_path, grid=False):
-
     # Cannot train on empty list
-    if not training_list:
+    if not txt_files:
         print 'no training files :('
         exit(1)
 
 
     # Read the data into a Note object
     notes = []
-    for txt in training_list:
+    for txt in txt_files:
         note_tmp = Note()
         note_tmp.read(txt)
         notes.append(note_tmp)
 
+    # Get data from notes
+    X = []
+    Y = []
+    for n in notes:
+        X += n.txtlist()
+        Y += n.conlist()
+
+
+
+    # Build model
+    vec, svc = train(X, Y, model_path, grid)
+
+
+
+
+def train(X, Y, model_path=None, grid=False):
+
+    """
+    train()
+
+    Purpose: Train a classifier on annotated data
+
+    @param X.            list of (tweet-ID, tweet-text) pairs
+    @param Y.            list of labels for each pair in X
+    @param model_path.   filename of where to pickle Model object
+    @param grid_search.  boolean indicating whether to perform grid search
+
+    @return              A (svc,vec) pair, where:
+                           svc is the classifer
+                           vec is the feature vectorizer
+    """
+
 
     # Data -> features
-    feats  = extract_features(notes)
-    labels = extract_labels(notes)
+    feats  = extract_features(X)
+
+    labels = [ labels_map[y] for y in Y ]
     Y = np.array(  labels  )
 
 
@@ -110,11 +135,12 @@ def train(training_list, model_path, grid=False):
 
 
     # Save model
-    with open(model_path+'.dict' , 'wb') as f:
-        pickle.dump(vec, f)
+    if model_path:
+        with open(model_path+'.dict' , 'wb') as f:
+            pickle.dump(vec, f)
 
-    with open(model_path+'.model', 'wb') as f:
-        pickle.dump(clf, f)
+        with open(model_path+'.model', 'wb') as f:
+            pickle.dump(clf, f)
 
 
     # return model

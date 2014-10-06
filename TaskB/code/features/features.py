@@ -10,11 +10,11 @@
 import os, sys
 import re
 from copy import copy
-from HTMLParser import HTMLParser
 
 import utilities
 from nlp          import nlp
 from twitter_data import twitter_data
+import url
 
 import note
 from read_config import enabled_modules
@@ -41,7 +41,7 @@ class FeaturesWrapper:
 
 
 
-    def extract_features(self, notes):
+    def extract_features(self, X):
 
         """
         Model::extract_features()
@@ -53,34 +53,42 @@ class FeaturesWrapper:
         """
 
         # data   - A list of list of the medical text's words
-        data = [ twt for note in notes for twt in note.text_list() ]
-        sids = [ sid for note in notes for sid in note.sid_list()  ]
+        sids = [ x[0] for x in X ]
+        data = [ x[1] for x in X ]
 
         # Process data with twitter_nlp
         tagger = enabled_modules['twitter_nlp']
         if tagger:
             self.twitter_nlp = nlp.TwitterNLP(tagger, data)
+        else:
+            self.twitter_nlp = None
 
         # Lookup tweet metadata
         if enabled_modules['twitter_data']:
             self.twitter_data = twitter_data.TwitterData(sids)
 
+        # Get data from URLs in tweets
+        # NOTE: Instantiate this module LAST! (it calls all other ones)
+        if enabled_modules['url']:
+            self.url = url.Url(self, data)
+
         # Get features for each tweet
-        features_list= [ self.features_for_tweet(s,t) for s,t in zip(sids,data) ]
+        features_list= [ self.features_for_tweet(t,s) for t,s in zip(data,sids) ]
 
         return features_list
 
 
 
-    def features_for_tweet(self, sid, tweet):
+    def features_for_tweet(self, tweet, sid=0):
 
         """
         Model::features_for_tweet()
 
         Purpose: Generate features for a single tweet
 
-        @param sid.   An int   (the ID   of a tweet)
         @param tweet. A string (the text of a tweet)
+        @param sid.   An int   (the ID   of a tweet)
+                        If sid == 0, then ignore metadata features
         @param tags.  A list of data (POS and chunk tags) from twitter_nlp
         @return       A hash table of features
         """
@@ -89,23 +97,53 @@ class FeaturesWrapper:
         features = {}
 
 
-        # Feature: twitter_nlp features
+        # Feature: twitter_nlp features (cached based on unescaped text)
         if enabled_modules['twitter_nlp']:
             nlp_feats = self.twitter_nlp.features(tweet)
             features.update(nlp_feats)
+            #print '\n'
+            #print tweet
+            #print 
+            #print nlp_feats
 
-
-        # Feature: twitter_nlp features
-        if enabled_modules['twitter_data']:
-            tdata_feats = self.twitter_data.features(sid)
-            features.update(tdata_feats)
 
 
         # Tweet representation
-        h = HTMLParser()
-        tweet = h.unescape(tweet)
-        phrase = tweet.split(' ')
+        if 1:
+            phrase = utilities.tokenize(tweet, self.twitter_nlp)
+        else:
+            phrase = utilities.tokenize(tweet)
 
+
+
+        # Feature: Normalized unigrams
+        normalized_stems = utilities.normalize_phrase(phrase, stem=True)
+        #print tweet
+        for word in normalized_stems:
+            #print '\t', word
+            features[('term_unigram', word)] = 1
+        #print
+
+
+        # TODO - Work on normalization of tweet unigrams
+        #print
+        #print tweet
+        #print normalized_stems
+
+        # Feature: twitter_nlp features
+        if enabled_modules['twitter_data']:
+            if sid:
+                pass
+                #tdata_feats = self.twitter_data.features(sid)
+                #features.update(tdata_feats)
+
+
+        # Feature: URL Features
+        if enabled_modules['url']:
+            urls = [  w  for  w  in  phrase  if  utilities.is_url(w)  ]
+            for url in urls:
+                feats = self.url.features(url)
+                features.update(feats)
 
         # Feature: Lexicon Features
         if enabled_modules['lexicons']:
@@ -113,31 +151,14 @@ class FeaturesWrapper:
             features.update(feats)
 
 
-        # Feature: Normalized unigrams
-        normalized_stems = utilities.normalize_phrase(phrase, stem=True)
-        for word in normalized_stems:
-            features[('term_unigram', word)] = 1.5
-
-
-        '''
-        print phrase
-        print
-        print normalized
-        '''
-
-
         # Feature: Split hashtag
         if enabled_modules['hashtag']:
             hashtags = [  w  for  w  in  phrase  if  len(w) and (w[0] == '#')  ]
             for ht in hashtags:
                 toks = hashtag.split_hashtag(ht)
-                #print ht
-                #print '\t', toks
-                #print
                 for tok in toks:
                     features[('hashtag-tok',tok.lower())] = 1
 
-            #if hashtags: print
 
 
         # Feature: Punctuation counts
@@ -148,8 +169,12 @@ class FeaturesWrapper:
 
 
         # Result: Slightly better
-        features['tweet_length'] = len(' '.join(phrase))
-        features['phrase_length'] = len(phrase) / 15
+        features['phrase_length'] = len(phrase) / 4
+
+
+        # FIXME - Weirdest error
+        #  Adding this feature causes the SVM to predict nondeterministically
+        #features['tweet_length'] = len(' '.join(phrase))
 
 
         #print features
@@ -169,9 +194,10 @@ class FeaturesWrapper:
 
 
         '''
-        # Result: Worse
+        # Result: Worse (except for 3-grams with .5 weight)
         # Features: N-grams
-        vals = [2,3,4]
+        #vals = [2,3,4]
+        vals = [3]
         for n in vals:
             for i in range(len(phrase)-n+1):
 
@@ -182,16 +208,16 @@ class FeaturesWrapper:
                 
                 tup = eval( "('" + "', '".join(ngram) + "')" )
                 featname = ( '%d-gram'%n, tup  )
-                features[featname] = 1
+                features[featname] = .5
                 #print '\t', ngram
 
-                for j in range(n):
-                    words = copy(ngram)
-                    words[j] = '*'
-                    tup = eval( "('" + "', '".join(words) + "')" )
-                    featname = ( 'noncontiguous-%d-gram'%n, tup  )
-                    features[featname] = 1
-                    #print tup
+                #for j in range(n):
+                #    words = copy(ngram)
+                #    words[j] = '*'
+                #    tup = eval( "('" + "', '".join(words) + "')" )
+                #    featname = ( 'noncontiguous-%d-gram'%n, tup  )
+                #    features[featname] = 1
+                #    #print tup
         '''
 
 
@@ -250,6 +276,12 @@ class FeaturesWrapper:
                 break
         features[ ('contains_elongated_punc',contains_elongated_punc) ] = 1
         '''
+
+
+        #print '\n\n\n'
+        #print tweet
+        #print
+        #print features
 
         return features
 

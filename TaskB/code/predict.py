@@ -12,8 +12,7 @@ import argparse
 import cPickle as pickle
 
 from features.features import FeaturesWrapper
-from model import extract_labels
-from model import convert_labels
+from model import reverse_labels_map
 from note import Note
 
 
@@ -53,51 +52,54 @@ def main():
     out_dir    = args.out
 
 
-    # Predict
-    predict( txt_files, model_path, out_dir )
-
-
-
-
-def predict( predict_files, model_path, out_dir ):
-
-    if not predict_files:
+    # Available data
+    if not txt_files:
         print 'no predicting files :('
-        exit(1)
+        exit(1) 
 
 
     # Load model
     with open(model_path+'.model', 'rb') as fid:
-        svc = pickle.load(fid)
+        clf = pickle.load(fid)
     with open(model_path+'.dict', 'rb') as fid:
         vec = pickle.load(fid)
 
 
-    # Read the data into a Note object
-    notes = []
-    for pred_file in predict_files:
-
+    # Predict labels for each file
+    for pfile in txt_files:
         note = Note()
-        note.read(pred_file)
-
-        # Data -> features
-        feat_obj = FeaturesWrapper()
-        feats  = feat_obj.extract_features([note])
-        labels = extract_labels([note])
-
-
-        # Vectorize feature dictionary
-        # NOTE: do not fit() during predicting
-        vectorized = vec.transform(feats)
-
-
-        # predict
-        labels = svc.predict(vectorized)
-        labels = convert_labels( note, labels )
+        note.read(pfile)
+        X = zip(note.sid_list(), note.text_list())
+        
+        # Predict
+        labels = predict( X, clf, vec )
 
         # output predictions
-        outfile  = os.path.join(out_dir, os.path.basename(pred_file))
+        outfile  = os.path.join(out_dir, os.path.basename(pfile))
         note.write( outfile, labels )
+
+
+
+
+def predict( X, clf, vec ):
+
+    """
+    predict()
+    """
+
+    # Data -> features
+    feat_obj = FeaturesWrapper()
+    feats  = feat_obj.extract_features(X)
+
+    # Vectorize feature dictionary
+    # NOTE: do not fit() during predicting
+    vectorized = vec.transform(feats)
+
+    # predict
+    labels = clf.predict(vectorized)
+    labels = [ reverse_labels_map[y] for y in labels ]
+
+    return labels
 
 
 
