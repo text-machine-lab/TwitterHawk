@@ -16,8 +16,6 @@ from BeautifulSoup import BeautifulSoup
 from HTMLParser    import HTMLParser
 
 from read_config import enabled_modules
-from nlp          import nlp
-
 
 
 # Add lexicon code to path
@@ -26,6 +24,10 @@ if enabled_modules['lexicons']:
 else:
     sys.path.append( os.path.join(os.getenv('BISCUIT_DIR') ,'lexicons/code') )
 import emoticons
+
+
+if enabled_modules['twitter_nlp']:
+    from nlp import nlp
 
 
 

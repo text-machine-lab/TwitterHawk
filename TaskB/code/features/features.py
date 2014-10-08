@@ -12,10 +12,6 @@ import re
 from copy import copy
 
 import utilities
-from nlp          import nlp
-from twitter_data import twitter_data
-import url
-
 import note
 from read_config import enabled_modules
 
@@ -28,10 +24,19 @@ else:
     sys.path.append( os.path.join(os.getenv('BISCUIT_DIR') ,'lexicons/code') )
 import emoticons
 
+if enabled_modules['twitter_nlp']:
+    from nlp import nlp
+
+if enabled_modules['twitter_data']:
+    from twitter_data import twitter_data
+
+if enabled_modules['url']:
+    import url
 
 if enabled_modules['hashtag']:
     sys.path.append(enabled_modules['hashtag'])
     import hashtag
+
 
 
 class FeaturesWrapper:

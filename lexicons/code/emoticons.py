@@ -97,4 +97,5 @@ else:
 
     # Build dictionary of emoticons
     filename = os.path.join(BASE_DIR, 'lexicons/emoticons.txt')
-    build_lexicon(filename)
+    if os.path.exists(filename):
+        build_lexicon(filename)
