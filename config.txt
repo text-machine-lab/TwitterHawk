@@ -1,4 +1,4 @@
-lexicons     /data1/wboag/biscuit/Biscuit/lexicons
+lexicons     None /data1/wboag/biscuit/Biscuit/lexicons
 twitter_nlp  None /data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py
 twitter_data None True
 url          None True

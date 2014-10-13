@@ -11,7 +11,6 @@ import os, sys
 import re
 from copy import copy
 
-
 import note
 
 from taskb_lexicon_features import lexicon_features

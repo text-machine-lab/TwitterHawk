@@ -19,6 +19,7 @@ from HTMLParser    import HTMLParser
 # Add common-lib code to system path
 sources = os.getenv('BISCUIT_DIR')
 if sources not in sys.path: sys.path.append(sources)
+from read_config import enabled_modules
 
 from common_lib.common_lexicons import emoticons
 
@@ -39,6 +40,7 @@ stop_words = frozenset( ["a"   , "an"   , "and"  , "are"  , "as"  , "at"   ,
 
 # Stemmer for words
 st = nltk.stem.SnowballStemmer('english')
+
 
 
 def tokenize(text, nlp=None):
