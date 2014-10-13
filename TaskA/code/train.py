@@ -88,7 +88,6 @@ def main():
         Y += n.conlist()
 
 
-
     # Build model
     vec, svc = train(X, Y, model_path, grid)
 
