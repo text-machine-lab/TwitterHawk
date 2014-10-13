@@ -25,10 +25,15 @@ Installation
     Must create a BISCUIT_DIR environment variable.
 
 
-    Get a dictionary from /usr/share/dict/words (or anywhere else, really)
-    Online dictionary: https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt
+    The system knows which advanced features to include from reading $BISCUIT_DIR/config.txt
 
-    Trie for hashtag segmentation from https://github.com/fnl/patricia-trie
+
+    Hashtag Segmentation
+        - Hashtag segmentation requires a dictionary of legal words.
+        - Online dictionary: https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt
+        - Store this file in $BISCUIT_DIR/common-lib/features/hashtag/words.txt
+
+        - Trie for hashtag segmentation from https://github.com/fnl/patricia-trie
 
 
 
@@ -42,13 +47,13 @@ Usage
 
 Task A - Contextual Polarity Disambiguation
 
-    Currently, uses normalized unigrams & lexicon features for F1 of 
+    Best F1: .87
 
 
 
 Task B - Message Polarity Classification
 
-    Achieves F1 of .638
+    Best F1: .67
 
 
 
