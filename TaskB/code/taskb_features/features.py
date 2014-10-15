@@ -13,7 +13,12 @@ from copy import copy
 
 import note
 
+from nltk.corpus import wordnet as wn   
+import Queue
+
+
 from taskb_lexicon_features import lexicon_features
+
 
 
 # Add common-lib code to system path
@@ -104,9 +109,32 @@ class FeaturesWrapper:
             features.update(nlp_feats)
 
 
+
+        # Tweet representation
+
         # Tweet representation (list of tokens/strings)
         phrase = utilities.tokenize(tweet, self.twitter_nlp)
 
+        
+        #add wordnet features     
+        wnQueue = Queue.Queue()
+        for word in phrase:
+            parentNumber = 1
+            synsetList = wn.synsets(word)
+            wnQueue.put(synsetList)
+            while wnQueue.empty() == False:
+                queueList = wnQueue.get()
+                if parentNumber > 0:
+                    parentList = []
+                    for synset in queueList:
+                        features[('term_wn_node',synset)] = 1
+                        parentList += synset.hypernyms()
+                    wnQueue.put(parentList)
+                    parentNumber = parentNumber - 1
+                else:
+                    for synset in queueList:
+                        features[('term_wn_node',synset.name)] = 1
+        
 
         # TODO - Work on normalization of tweet unigrams
         # Feature: Normalized unigrams
