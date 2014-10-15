@@ -6,15 +6,21 @@ from twitter import oauth_dance, read_token_file, Twitter, OAuth, TwitterError
 
 
 
-# Twitter credentials
-CONSUMER_KEY='JEdRRoDsfwzCtupkir4ivQ'
-CONSUMER_SECRET='PAbSSmzQxbcnkYYH2vQpKVSq2yPARfKm0Yl6DrLc'
+# global connection
+t = None
 
-MY_TWITTER_CREDS = os.path.expanduser('~/.my_app_credentials')
-if not os.path.exists(MY_TWITTER_CREDS):
-    oauth_dance("Semeval sentiment analysis", CONSUMER_KEY, CONSUMER_SECRET, MY_TWITTER_CREDS)
-oauth_token, oauth_secret = read_token_file(MY_TWITTER_CREDS)
-t = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_SECRET))
+def connect():
+    global t
+
+    # Twitter credentials
+    CONSUMER_KEY='JEdRRoDsfwzCtupkir4ivQ'
+    CONSUMER_SECRET='PAbSSmzQxbcnkYYH2vQpKVSq2yPARfKm0Yl6DrLc'
+
+    MY_TWITTER_CREDS = os.path.expanduser('~/.my_app_credentials')
+    if not os.path.exists(MY_TWITTER_CREDS):
+        oauth_dance("Semeval sentiment analysis", CONSUMER_KEY, CONSUMER_SECRET, MY_TWITTER_CREDS)
+    oauth_token, oauth_secret = read_token_file(MY_TWITTER_CREDS)
+    t = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_SECRET))
 
 
 
@@ -29,6 +35,9 @@ def resolve(sids):
     @param sids.  A list of twiiter IDs.
     @return       A list of tweets.
     """
+
+    # Ensure connection
+    if not t: connect()
 
     # Lookup each id
     tweets   = []
