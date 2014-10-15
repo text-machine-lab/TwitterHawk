@@ -21,8 +21,13 @@ from common_lib.read_config import enabled_modules
 
 # Add trie module to path
 trie_module = enabled_modules['hashtag']
-if trie_module not in sys.path: sys.path.append(trie_module)
-import patricia
+print trie_module
+if trie_module:
+    if trie_module not in sys.path: sys.path.append(trie_module)
+    import patricia
+    _dictionary = patricia.trie()
+else:
+    _dictionary = {}
 
 
 # For development: allow module to be run-able
@@ -39,12 +44,6 @@ def main():
             stream = line.strip()
             toks = split_hashtag(stream)
             print stream, '\t', toks
-
-
-
-
-# Dictionary of emoticons
-_dictionary = patricia.trie()
 
 
 
@@ -166,5 +165,7 @@ if __name__ == '__main__':
     main()
 else:
     # Build dictionary
-    filename = os.path.join(enabled_modules['hashtag'], 'dictionary.txt')
-    build_dictionary(filename)
+    basename = enabled_modules['hashtag']
+    if basename:
+        filename = os.path.join(enabled_modules['hashtag'], 'dictionary.txt')
+        build_dictionary(filename)
