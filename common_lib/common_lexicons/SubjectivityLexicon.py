@@ -14,7 +14,7 @@ import re
 
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'lexicons')
+BASE_DIR = os.getenv('BISCUIT_DIR')
 
 
 # Organize Data

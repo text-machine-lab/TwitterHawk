@@ -7,7 +7,7 @@
 #-------------------------------------------------------------------------------
 
 
-from features.features import features_for_tweet
+from taska_features.features import features_for_tweet
 
 
 

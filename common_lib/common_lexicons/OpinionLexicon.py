@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # Name:        OpinionLexicon.py
 #
-#  Purpose:     Interface for OpinionLexiocn data
+# Purpose:     Interface for OpinionLexiocn data
 #
 # Author:      Willie Boag
 #-------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ import os
 
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'lexicons')
+BASE_DIR = os.getenv('BISCUIT_DIR')
 
 
 class OpinionLexicon:

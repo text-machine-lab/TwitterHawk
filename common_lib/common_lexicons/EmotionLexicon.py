@@ -13,7 +13,7 @@ from collections import defaultdict
 
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'lexicons')
+BASE_DIR = os.getenv('BISCUIT_DIR')
 
 
 class EmotionLexicon:

@@ -13,18 +13,21 @@ import glob
 import argparse
 import cPickle as pickle
 
+
+# TaskB code
+from taskb_features.features import FeaturesWrapper
+from model import labels_map
+from note import Note
+
+
+# Scikit-learn
+import numpy as np
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.svm import LinearSVC
-import numpy as np
 from sklearn import svm
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
-
-import helper
-from features.features import FeaturesWrapper
-from model import labels_map
-from note import Note
 
 
 
@@ -44,10 +47,7 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
-        #default = os.path.join(BASE_DIR, 'data/sample6500.txt')
-        #default = os.path.join(BASE_DIR, 'data/sample.txt')
-        #default = os.path.join(BASE_DIR, 'data/twitter-dev-gold-B.tsv')
+        default = os.path.join(BASE_DIR, 'data/annotated.txt')
     )
 
     parser.add_argument("-m",
@@ -59,7 +59,7 @@ def main():
     parser.add_argument("-g",
         dest = "grid",
         help = "Perform Grid Search",
-        type = bool,
+        action='store_true',
         default = False
     )
 
@@ -98,7 +98,7 @@ def main():
 
 
 
-def train(X, Y, model_path=None, grid=False):
+def train(X, Y, model_path=None, grid=False, feat_obj=None):
 
     """
     train()
@@ -117,7 +117,8 @@ def train(X, Y, model_path=None, grid=False):
 
 
     # Data -> features
-    feat_obj = FeaturesWrapper()
+    if feat_obj == None: 
+        feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
 
     labels = [ labels_map[y] for y in Y ]

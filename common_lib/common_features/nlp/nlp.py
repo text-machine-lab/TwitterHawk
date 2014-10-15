@@ -18,48 +18,17 @@ from HTMLParser import HTMLParser
 
 import interface_nlp
 
-# Add cache to path
-sys.path.append( os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/code') )
-from cache import Cache
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-def main():
-
-    # Parse arguments
-    parser = argparse.ArgumentParser(description='twitter_nlp tagging')
-
-    parser.add_argument('-t',
-                        dest = 'tweets',
-                        default = None,
-                        type=argparse.FileType('r')
-                       )
-
-    parser.add_argument('--tagger',
-                        dest = 'tagger',
-                        default = '/data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py'
-                       )
-
-
-    args = parser.parse_args()
-
-
-    # Read data from file
-    twts = [ line.split('\t')[3].strip('\n')  for  line  in  args.tweets.readlines() ]
-    
-    # twitter_nlp tagger
-    tagger = args.tagger
-
-    # Run twitter_nlp on data
-    t_nlp = TwitterNLP(tagger, twts)
-
-    # Display tokenized data
-    toks = [ t_nlp.tokens(twt)  for  twt  in  twts ]
-
+from common_lib.cache import Cache
 
 
 class TwitterNLP:
 
-    def __init__(self, tagger, data):
+    def __init__(self, tagger, data=[]):
         # Lookup cache (constantly rerunning tagger takes time)
         self.cache = Cache('twitter_nlp')
 
@@ -232,39 +201,23 @@ class TwitterNLP:
         @return      A feature dictionary.
         """
 
-        # Feature Evaluations:
-        #
-        # CV - 40 folds
-        #
-        # Baseline   - 0.632580027567
-        # Entities   - 0.634127069003
-        # Brown      - 0.629866566792
-        # POS        - 0.634105466573
-        # All        - 0.634953290389
-        # Ents + POS - 0.633480942525
-
-
         # Feature dictionary
-        features = {}
-
+        feats = {}
 
         # Escape text if not already done
         twt = self.h.unescape(twt).strip()
 
-
         # Feature: Entity types
         ents = self.entities(twt)
         for ent in ents:
-            features[ ('entity_type', ent[0]) ] = .5
-            features[ ('entity',      ent[1]) ] = .5
-
+            feats[ ('entity_type', ent[0]) ] = .5
+            feats[ ('entity',      ent[1]) ] = .5
 
         # Feature: Brown Cluster bigrams
         clustered = self.brown(twt)
         for i in range(len(clustered)-1):
             bigram = clustered[i:i+2]
-            features[ ('brown_bigram',(clustered[i],clustered[i+1])) ] = .5
-
+            feats[ ('brown_bigram',(clustered[i],clustered[i+1])) ] = .5
 
         # Feature: POS counts
         pos_counts = defaultdict(lambda:0)        
@@ -273,10 +226,47 @@ class TwitterNLP:
                 pos_counts[pos] += 1
         for pos,count in pos_counts.items():
             featname = 'pos_count-%s' % pos
-            features[featname] = count
+            feats[featname] = count
+
+        #print 'nlp: ', twt
+        #print '\t', feats
+
+        return feats
 
 
-        return features
+
+
+def main():
+
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='twitter_nlp tagging')
+
+    parser.add_argument('-t',
+                        dest = 'tweets',
+                        default = None,
+                        type=argparse.FileType('r')
+                       )
+
+    parser.add_argument('--tagger',
+                        dest = 'tagger',
+                        default = '/data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py'
+                       )
+
+
+    args = parser.parse_args()
+
+
+    # Read data from file
+    twts = [ line.split('\t')[3].strip('\n')  for  line  in  args.tweets.readlines() ]
+    
+    # twitter_nlp tagger
+    tagger = args.tagger
+
+    # Run twitter_nlp on data
+    t_nlp = TwitterNLP(tagger, twts)
+
+    # Display tokenized data
+    toks = [ t_nlp.tokens(twt)  for  twt  in  twts ]
 
 
 

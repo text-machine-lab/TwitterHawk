@@ -11,41 +11,50 @@ import os, sys
 import re
 from copy import copy
 
-import utilities
 import note
-from read_config import enabled_modules
 
 from nltk.corpus import wordnet as wn   
 import Queue
 
 
-# Add lexicon code to path
-if enabled_modules['lexicons']:
-    from lexicon import lexicon_features
-    sys.path.append( os.path.join(enabled_modules['lexicons'] ,'code') )
-else:
-    sys.path.append( os.path.join(os.getenv('BISCUIT_DIR') ,'lexicons/code') )
-import emoticons
+from taskb_lexicon_features import lexicon_features
 
-if enabled_modules['twitter_nlp']:
-    from nlp import nlp
 
-if enabled_modules['twitter_data']:
-    from twitter_data import twitter_data
 
-if enabled_modules['url']:
-    import url
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-if enabled_modules['hashtag']:
-    sys.path.append(enabled_modules['hashtag'])
-    import hashtag
+from common_lib.read_config                  import enabled_modules
+
+from common_lib.common_lexicons              import emoticons
+
+from common_lib.common_features              import utilities
+from common_lib.common_features              import hashtag
+from common_lib.common_features              import url
+from common_lib.common_features.nlp          import nlp
+from common_lib.common_features.twitter_data import twitter_data
 
 
 
 class FeaturesWrapper:
 
     def __init__(self):
-        pass
+
+        # Tag/Chunk data with twitter_nlp
+        tagger = enabled_modules['twitter_nlp']
+        if tagger:
+            self.twitter_nlp = nlp.TwitterNLP(tagger)
+        else:
+            self.twitter_nlp = None
+
+        # Lookup tweet metadata
+        if enabled_modules['twitter_data']:
+            self.twitter_data = twitter_data.TwitterData()
+
+        # Get HTML data from URLs in tweets
+        if enabled_modules['url']:
+            self.url = url.Url()
 
 
 
@@ -64,21 +73,11 @@ class FeaturesWrapper:
         sids = [ x[0] for x in X ]
         data = [ x[1] for x in X ]
 
-        # Process data with twitter_nlp
-        tagger = enabled_modules['twitter_nlp']
-        if tagger:
-            self.twitter_nlp = nlp.TwitterNLP(tagger, data)
-        else:
-            self.twitter_nlp = None
-
-        # Lookup tweet metadata
+        # Batch update of external modules
+        if enabled_modules['twitter_nlp' ]:
+            self.twitter_nlp.resolve( data)
         if enabled_modules['twitter_data']:
-            self.twitter_data = twitter_data.TwitterData(sids)
-
-        # Get data from URLs in tweets
-        # NOTE: Instantiate this module LAST! (it calls all other ones)
-        if enabled_modules['url']:
-            self.url = url.Url(self, data)
+            self.twitter_data.resolve(sids)
 
         # Get features for each tweet
         features_list= [ self.features_for_tweet(t,s) for t,s in zip(data,sids) ]
@@ -87,7 +86,7 @@ class FeaturesWrapper:
 
 
 
-    def features_for_tweet(self, tweet, sid=0):
+    def features_for_tweet(self, tweet, sid):
 
         """
         Model::features_for_tweet()
@@ -96,7 +95,6 @@ class FeaturesWrapper:
 
         @param tweet. A string (the text of a tweet)
         @param sid.   An int   (the ID   of a tweet)
-                        If sid == 0, then ignore metadata features
         @param tags.  A list of data (POS and chunk tags) from twitter_nlp
         @return       A hash table of features
         """
@@ -109,28 +107,20 @@ class FeaturesWrapper:
         if enabled_modules['twitter_nlp']:
             nlp_feats = self.twitter_nlp.features(tweet)
             features.update(nlp_feats)
-            #print '\n'
-            #print tweet
-            #print 
-            #print nlp_feats
 
 
 
         # Tweet representation
-        if 1:
-            phrase = utilities.tokenize(tweet, self.twitter_nlp)
-        else:
-            phrase = utilities.tokenize(tweet)
 
-        """
+        # Tweet representation (list of tokens/strings)
+        phrase = utilities.tokenize(tweet, self.twitter_nlp)
+
+        
         #add wordnet features     
         wnQueue = Queue.Queue()
         for word in phrase:
             parentNumber = 1
             synsetList = wn.synsets(word)
-            #for synset in wn.synsets(word):      
-                #synsetList.append(synset)   
-                #features[('term_wn_node',synset)] = 1    
             wnQueue.put(synsetList)
             while wnQueue.empty() == False:
                 queueList = wnQueue.get()
@@ -144,10 +134,11 @@ class FeaturesWrapper:
                 else:
                     for synset in queueList:
                         features[('term_wn_node',synset.name)] = 1
-        """
+        
 
+        # TODO - Work on normalization of tweet unigrams
         # Feature: Normalized unigrams
-        normalized_stems = utilities.normalize_phrase(phrase, stem=True)
+        normalized_stems = utilities.normalize_phrase_TaskB(phrase, stem=True)
         #print tweet
         for word in normalized_stems:
             #print '\t', word
@@ -155,17 +146,10 @@ class FeaturesWrapper:
         #print
 
 
-        # TODO - Work on normalization of tweet unigrams
-        #print
-        #print tweet
-        #print normalized_stems
-
         # Feature: twitter_nlp features
         if enabled_modules['twitter_data']:
-            if sid:
-                pass
-                #tdata_feats = self.twitter_data.features(sid)
-                #features.update(tdata_feats)
+            tdata_feats = self.twitter_data.features(sid)
+            features.update(tdata_feats)
 
 
         # Feature: URL Features
@@ -175,6 +159,7 @@ class FeaturesWrapper:
                 feats = self.url.features(url)
                 features.update(feats)
 
+
         # Feature: Lexicon Features
         if enabled_modules['lexicons']:
             feats = lexicon_features(phrase)
@@ -183,12 +168,11 @@ class FeaturesWrapper:
 
         # Feature: Split hashtag
         if enabled_modules['hashtag']:
-            hashtags = [  w  for  w  in  phrase  if  len(w) and (w[0] == '#')  ]
+            hashtags = [ w for w in normalized_stems if len(w) and (w[0]=='#') ]
             for ht in hashtags:
                 toks = hashtag.split_hashtag(ht)
                 for tok in toks:
                     features[('hashtag-tok',tok.lower())] = 1
-
 
 
         # Feature: Punctuation counts
@@ -200,14 +184,6 @@ class FeaturesWrapper:
 
         # Result: Slightly better
         features['phrase_length'] = len(phrase) / 4
-
-
-        # FIXME - Weirdest error
-        #  Adding this feature causes the SVM to predict nondeterministically
-        #features['tweet_length'] = len(' '.join(phrase))
-
-
-        #print features
 
 
         '''

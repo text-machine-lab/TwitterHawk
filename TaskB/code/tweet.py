@@ -24,7 +24,7 @@ class Tweet:
         """
         Tweet::Constructor
 
-        Purpose: Parse a line of a SemEval file and store the internal representation.
+        Purpose: Parse a line of a SemEval file & store the representation.
 
         File format:         SID          UID        label        sentence
                  ex. 111344599699693568	338069340	neutral	   michael jackson - hollywood tonight http://t.co/s6n3HJj

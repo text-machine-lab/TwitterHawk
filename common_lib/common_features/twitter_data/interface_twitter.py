@@ -18,42 +18,6 @@ t = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_SECRET)
 
 
 
-def main():
-
-    # Parse arguments
-    parser = argparse.ArgumentParser(description="downloads tweets")
-
-    parser.add_argument('--partial', 
-                        dest='partial', 
-                        default=None, 
-                        type=argparse.FileType('r')
-                       )
-    parser.add_argument('--dist', 
-                        dest='dist', 
-                        default=None, 
-                        type=argparse.FileType('r'), 
-                        required=True
-                       )
-
-    args = parser.parse_args()
-
-
-    # Get an ID from the dist file
-    sids   = []
-    labels = []
-    for line in args.dist:
-        fields = line.strip().split('\t')
-        sid   = fields[0]
-        label = fields[2]
-        sids.append(sid)
-        labels.append(label)
-
-
-    # Lookup each tweet
-    tweets = resolve(sids)
-
-
-
 
 def resolve(sids):
 
@@ -104,6 +68,46 @@ def resolve(sids):
         tweets.append(tweet)
 
     return tweets
+
+
+
+
+
+
+
+def main():
+
+    # Parse arguments
+    parser = argparse.ArgumentParser(description="downloads tweets")
+
+    parser.add_argument('--partial', 
+                        dest='partial', 
+                        default=None, 
+                        type=argparse.FileType('r')
+                       )
+    parser.add_argument('--dist', 
+                        dest='dist', 
+                        default=None, 
+                        type=argparse.FileType('r'), 
+                        required=True
+                       )
+
+    args = parser.parse_args()
+
+
+    # Get an ID from the dist file
+    sids   = []
+    labels = []
+    for line in args.dist:
+        fields = line.strip().split('\t')
+        sid   = fields[0]
+        label = fields[2]
+        sids.append(sid)
+        labels.append(label)
+
+
+    # Lookup each tweet
+    tweets = resolve(sids)
 
 
 

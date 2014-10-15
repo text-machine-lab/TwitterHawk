@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
-# Name:        train.py
+# Name:        cv.py
 #
-# Purpose:     Train an svm
+# Purpose:     Cross validation.
 #
 # Author:      Willie Boag
 #-------------------------------------------------------------------------------
@@ -15,6 +15,7 @@ import random
 
 from note import Note
 from model import labels_map
+from features.features import FeaturesWrapper
 
 import train
 import predict
@@ -87,6 +88,10 @@ def main():
     confusion = [ [0 for i in labels_map] for j in labels_map ]
 
 
+    # Instantiate feat obj once (it'd really slow down CV to rebuild every time)
+    feat_obj = FeaturesWrapper()
+
+
     # For each held-out test set
     i = 1
     for training,testing in cv_partitions(data[:length], num_folds=num_folds):
@@ -98,12 +103,12 @@ def main():
         # Train on non-heldout data
         X_train = [ (d[0],d[1]) for d in training ]
         Y_train = [  d[2]       for d in training ]
-        vec,clf= train.train(X_train, Y_train, model_path=None, grid=False)
+        vec,clf = train.train(X_train, Y_train, model_path=None, grid=False, feat_obj=feat_obj)
 
         # Predict on held out
         X_test = [ (d[0],d[1]) for d in testing ]
         Y_test = [  d[2]       for d in testing ]
-        labels = predict.predict(X_test, clf, vec)
+        labels = predict.predict(X_test, clf, vec, feat_obj=feat_obj)
 
         # Compute confusion matrix for held_out data
         testing_confusion = evaluate.create_confusion(Y_test, labels)

@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:        lexicon.py
+# Name:        taskb_lexicon_features.py
 #
 # Purpose:     Lexicon features
 #
@@ -11,14 +11,21 @@ import os,sys
 import string
 from collections import defaultdict
 
-from read_config import enabled_modules
 
-if not enabled_modules['lexicons']:
-    print >>sys.stderr, 'cannot find lexicons'
-    exit()
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-sys.path.append( os.path.join(enabled_modules['lexicons'],'code') )
-from lexicons import lexHTS, lexS140, lexOpi, lexSubj, lexEmo
+
+# If enabled, build all lexicons
+from common_lib.read_config import enabled_modules
+if enabled_modules['lexicons']:
+    from common_lib.common_lexicons.lexicons import lexHTS
+    from common_lib.common_lexicons.lexicons import lexS140
+    from common_lib.common_lexicons.lexicons import lexOpi
+    from common_lib.common_lexicons.lexicons import lexSubj
+    from common_lib.common_lexicons.lexicons import lexEmo
+
 
 
 

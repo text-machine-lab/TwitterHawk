@@ -35,6 +35,10 @@ def main():
             ind = i
 
 
+    # Specific module?
+    concentration = None
+
+
     # Profile code
     status,output = commands.getstatusoutput(cmd)
 
@@ -54,7 +58,7 @@ def main():
     print 'time: %s seconds' % time
     print
     print '   ncalls  tottime  percall  cumtime  percall filename:lineno(function)'
-    for line in data[:20]:
+    for line in data[:40]:
         print line
 
 

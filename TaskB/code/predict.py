@@ -11,7 +11,7 @@ import glob
 import argparse
 import cPickle as pickle
 
-from features.features import FeaturesWrapper
+from taskb_features.features import FeaturesWrapper
 from model import reverse_labels_map
 from note import Note
 
@@ -81,14 +81,15 @@ def main():
 
 
 
-def predict( X, clf, vec ):
+def predict(X, clf, vec, feat_obj=None):
 
     """
     predict()
     """
 
     # Data -> features
-    feat_obj = FeaturesWrapper()
+    if feat_obj == None: 
+        feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
 
     # Vectorize feature dictionary

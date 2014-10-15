@@ -13,13 +13,15 @@ import re
 import string
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
+from common_lib.read_config import enabled_modules
 
 
-sys.path.append( os.path.join(BASE_DIR, 'code') )
-from read_config import enabled_modules
-
-sys.path.append( enabled_modules['hashtag'] )
+# Add trie module to path
+trie_module = enabled_modules['hashtag']
+if trie_module not in sys.path: sys.path.append(trie_module)
 import patricia
 
 
@@ -145,7 +147,7 @@ def split_hashtag(word):
     """
 
     # Acronym?
-    if re.search('^#[A-Z]*$',word): return [word.strip('#').lower()]
+    if word.isupper(): return [word.strip('#').lower()]
 
     # Try CamelCase and return if exact match
     toks = re.findall('([A-Z][a-z]+|[0-9]+)', word)

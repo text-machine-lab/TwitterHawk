@@ -12,9 +12,8 @@
 import os
 
 
-
 # Open config file
-filename = os.path.join( os.getenv('BISCUIT_DIR'), 'TaskB/config.txt' )
+filename = os.path.join( os.getenv('BISCUIT_DIR'), 'config.txt' )
 f = open(filename, 'r')
 
 
