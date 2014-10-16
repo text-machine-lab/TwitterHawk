@@ -12,8 +12,12 @@ import os
 from collections import defaultdict
 
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-BASE_DIR = os.getenv('BISCUIT_DIR')
+from common_lib.read_config import enabled_modules
+
 
 
 class EmotionLexicon:
@@ -26,7 +30,8 @@ class EmotionLexicon:
 
 
         # Files containing data
-        filename = os.path.join(BASE_DIR,'lexicons/HashtagEmotion/hashtag-emotion-0.2.txt')
+        base_dir = enabled_modules['lexicons']
+        filename = os.path.join(base_dir,'HashtagEmotion/hashtag-emotion-0.2.txt')
 
 
         # Populate table with positive words

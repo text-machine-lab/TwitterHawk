@@ -12,9 +12,13 @@ import sys
 import os
 
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
+
+from common_lib.read_config import enabled_modules
 
 
-BASE_DIR = os.getenv('BISCUIT_DIR')
 
 
 # Organize Data
@@ -40,7 +44,8 @@ class SentimentLexicon:
 
 
         # Files containing data
-        lexicon_dir = os.path.join(os.path.join(BASE_DIR,'lexicons'), lex_name)
+        base_dir = enabled_modules['lexicons']
+        lexicon_dir = os.path.join(base_dir, lex_name)
         unigrams_f = os.path.join(lexicon_dir, 'unigrams-pmilexicon.txt')
         bigrams_f  = os.path.join(lexicon_dir,  'bigrams-pmilexicon.txt')
 

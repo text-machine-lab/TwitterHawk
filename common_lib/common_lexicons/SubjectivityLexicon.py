@@ -13,8 +13,13 @@ import sys
 import re
 
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-BASE_DIR = os.getenv('BISCUIT_DIR')
+from common_lib.read_config import enabled_modules
+
+
 
 
 # Organize Data
@@ -40,7 +45,8 @@ class SubjectivityLexicon:
 
 
         # File containing data
-        filename = os.path.join(BASE_DIR, 'lexicons/SubjectivityClues/subjectivity-clues.tff')
+        base_dir = enabled_modules['lexicons']
+        filename = os.path.join(base_dir, 'SubjectivityClues/subjectivity-clues.tff')
 
 
         # Populate table with unigrams

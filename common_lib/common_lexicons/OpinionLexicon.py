@@ -11,8 +11,12 @@ import sys
 import os
 
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-BASE_DIR = os.getenv('BISCUIT_DIR')
+from common_lib.read_config import enabled_modules
+
 
 
 class OpinionLexicon:
@@ -26,8 +30,9 @@ class OpinionLexicon:
 
 
         # Files containing data
-        pos_f = os.path.join(BASE_DIR,'lexicons/OpinionLexicon/positive-words.txt')
-        neg_f = os.path.join(BASE_DIR,'lexicons/OpinionLexicon/negative-words.txt')
+        base_dir = enabled_modules['lexicons']
+        pos_f = os.path.join(base_dir,'OpinionLexicon/positive-words.txt')
+        neg_f = os.path.join(base_dir,'OpinionLexicon/negative-words.txt')
 
 
         # Populate table with positive words
