@@ -10,8 +10,13 @@
 import os
 
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'lexicons')
+from common_lib.read_config import enabled_modules
+
+
 
 
 # For development: allow module to be run-able
@@ -96,6 +101,6 @@ if __name__ == '__main__':
 else:
 
     # Build dictionary of emoticons
-    filename = os.path.join(BASE_DIR, 'lexicons/emoticons.txt')
+    filename = os.path.join(base_dir, 'emoticons.txt')
     if os.path.exists(filename):
         build_lexicon(filename)
