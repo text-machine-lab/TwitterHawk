@@ -127,7 +127,7 @@ class FeaturesWrapper:
                 if parentNumber > 0:
                     parentList = []
                     for synset in queueList:
-                        features[('term_wn_node',synset)] = 1
+                        features[('term_wn_node',synset.name)] = 1
                         parentList += synset.hypernyms()
                     wnQueue.put(parentList)
                     parentNumber = parentNumber - 1

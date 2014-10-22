@@ -8,7 +8,7 @@
 
 
 import os
-
+import sys
 
 # Add common-lib code to system path
 sources = os.getenv('BISCUIT_DIR')
@@ -101,6 +101,8 @@ if __name__ == '__main__':
 else:
 
     # Build dictionary of emoticons
-    filename = os.path.join(base_dir, 'emoticons.txt')
-    if os.path.exists(filename):
-        build_lexicon(filename)
+    base_dir = enabled_modules['lexicons']
+    if base_dir:
+        filename = os.path.join(base_dir, 'emoticons.txt')
+        if os.path.exists(filename):
+            build_lexicon(filename)

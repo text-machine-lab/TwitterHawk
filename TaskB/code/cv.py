@@ -15,7 +15,7 @@ import random
 
 from note import Note
 from model import labels_map
-from features.features import FeaturesWrapper
+from taskb_features.features import FeaturesWrapper
 
 import train
 import predict
