@@ -25,8 +25,7 @@ if enabled_modules['lexicons']:
     from common_lib.common_lexicons.lexicons import lexOpi
     from common_lib.common_lexicons.lexicons import lexSubj
     from common_lib.common_lexicons.lexicons import lexEmo
-
-
+    from common_lib.common_lexicons.lexicons import lexAff
 
 
 def normalize(phrase):
@@ -189,6 +188,21 @@ def lexicon_features(phrase):
     if len(pos_bi_S140_scores):
         features['S140-bi-max'      ]  = max(pos_bi_S140_scores)
         features['S140-bi-last_pos'] = pos_bi_S140_scores[-1]
+
+    #affObject = AffinLexicon()
+    affTotal = 0
+    affDict = {n:0 for n in range(-5,6)}
+    affLast = 0
+    for word in phrase:
+        affScore = lexAff.score(word)
+        if affScore != None:
+            affTotal += affScore
+            affDict[affScore] += 1
+            affLast = affScore
+    features['Affin-Sum'] = affTotal
+    for key in affDict:
+        features[('Aff-score',key)] = affDict[key]
+    features['Aff-last'] = Afflast
 
 
     #print features
