@@ -20,7 +20,9 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
 
-from model import extract_features, labels_map
+from taska_features.features import FeaturesWrapper
+
+from model import labels_map
 from note import Note
 
 
@@ -84,17 +86,18 @@ def main():
     X = []
     Y = []
     for n in notes:
-        X += n.txtlist()
-        Y += n.conlist()
+        X += zip(n.getIDs(), n.getTweets())
+        Y += n.getLabels()
 
 
     # Build model
-    vec, svc = train(X, Y, model_path, grid)
+    feat_obj = FeaturesWrapper()
+    vec, svc = train(X, Y, model_path, grid, feat_obj)
 
 
 
 
-def train(X, Y, model_path=None, grid=False):
+def train(X, Y, model_path=None, grid=False, feat_obj=None):
 
     """
     train()
@@ -111,9 +114,9 @@ def train(X, Y, model_path=None, grid=False):
                            vec is the feature vectorizer
     """
 
-
     # Data -> features
-    feats  = extract_features(X)
+    if feat_obj == None: feat_obj = FeaturesWrapper()
+    feats    = feat_obj.extract_features(X)
 
     labels = [ labels_map[y] for y in Y ]
     Y = np.array(  labels  )

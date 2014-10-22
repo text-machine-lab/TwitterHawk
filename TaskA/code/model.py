@@ -7,32 +7,8 @@
 #-------------------------------------------------------------------------------
 
 
-from taska_features.features import features_for_tweet
-
-
-
 labels_map = dict(positive=0, negative=1, neutral=2)
 reverse_labels_map = { v:k for k,v in labels_map.items()}
-
-
-
-
-def extract_features(data):
-
-    """
-    Model::extract_features()
-
-    Purpose: Generate features for the input data
-
-    @param data.  A list of data points
-    @return       A list of feature dictionaries
-    """
-
-    # list of feature dictionaries
-    feats_map = lambda t: features_for_tweet(t)
-    feats = map( feats_map, data )
-
-    return feats
 
 
 
@@ -74,7 +50,7 @@ def convert_labels(note, labels):
     # Convert: numpy.array -> list
     labels = list(labels)
 
-    # one-to-one correspondence between words in 'data' and predictions in 'labels'
+    # 1-to-1 correspondence between words in 'data' and predictions in 'labels'
     classifications = [ reverse_labels_map[l] for l in labels ]
 
     return classifications

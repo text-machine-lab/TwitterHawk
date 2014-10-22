@@ -9,6 +9,7 @@ from twitter import oauth_dance, read_token_file, Twitter, OAuth, TwitterError
 # global connection
 t = None
 
+
 def connect():
     global t
 

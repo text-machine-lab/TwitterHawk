@@ -50,7 +50,7 @@ class TwitterNLP:
 
         #print 'resolve length: ', len(data)
 
-        data = [ self.h.unescape(twt).strip() for twt in data ]
+        data = [ self.h.unescape(twt).strip() for twt in set(data) ]
 
         # Tag the data
         if self.tagger:

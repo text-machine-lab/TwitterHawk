@@ -86,6 +86,9 @@ def emoticon_type(word):
                     2) None                                 if no match
     """
 
+    # Regexes for smiley :) :) :)) :))) :))))
+    #   for :) (: :( ):
+
     # Simple table lookup
     if word in _emoticon_lexicon:
         return _emoticon_lexicon[word]

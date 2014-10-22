@@ -73,11 +73,10 @@ class Note:
 
 
 
-
-    def txtlist(self):
+    def getTweets(self):
 
         """
-        Note::txtlist()
+        Note::getLabels()
 
         Purpose: Return a list of 3-tuples to classify.
 
@@ -96,22 +95,27 @@ class Note:
 
 
 
-
-    def conlist( self ):
+    def getLabels( self ):
 
         """
-        Note::conlist()
+        Note::getLabels()
 
         Purpose: Return a list labels for the tweets
         """
 
-        retVal = []
+        return [  tweet.label  for  tweet  in  self.tweets  ]
 
-        # Get each (begin,end,sentence) triple
-        for tweet in self.tweets:
-            retVal.append( tweet.label )
 
-        return retVal
+
+    def getIDs( self ):
+
+        """
+        Note::getIDs()
+
+        Purpose: Return a list status IDs for the tweets
+        """
+
+        return [  tweet.sid  for  tweet  in  self.tweets  ]
 
 
 

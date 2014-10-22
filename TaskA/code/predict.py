@@ -12,7 +12,9 @@ import glob
 import argparse
 import cPickle as pickle
 
-from model import extract_features, reverse_labels_map
+from taska_features.features import FeaturesWrapper
+
+from model import reverse_labels_map
 from model import convert_labels
 from note import Note
 
@@ -68,13 +70,14 @@ def main():
 
 
     # Predict labels for each file
+    feat_obj = FeaturesWrapper()
     for pfile in txt_files:
         note = Note()
         note.read(pfile)
-        X = note.txtlist()
+        X = note.getTweets()
 
         # Predict
-        labels = predict( X, clf, vec )
+        labels = predict( X, clf, vec, feat_obj=feat_obj )
 
         # output predictions
         outfile  = os.path.join(out_dir, os.path.basename(pfile))
@@ -83,14 +86,15 @@ def main():
 
 
 
-def predict( X, clf, vec ):
+def predict( X, clf, vec, feat_obj=None ):
 
     """
     predict()
     """
 
     # Data -> features
-    feats  = extract_features(X)
+    if feat_obj == None: feat_obj = FeaturesWrapper()
+    feats  = feat_obj.extract_features(X)
 
     # Vectorize feature dictionary
     # NOTE: do not fit() during predicting

@@ -38,8 +38,8 @@ class Tweet:
         if not words: raise BadTweetException
 
 
-        self.SID   = words[0]
-        self.UID   = words[1]
+        self.sid   = words[0]
+        self.uid   = words[1]
         self.begin = int(words[2])
         self.end   = int(words[3])
         self.label = words[4]
