@@ -24,7 +24,7 @@ class AffinLexicon( object ):
             self._data[word] = int(score)
 
     def score(self, word):
-        return self._data[key]
+        return self._data[word]
         """
         for key in self._data.keys():
             if key == word:

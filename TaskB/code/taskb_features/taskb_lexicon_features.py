@@ -26,7 +26,8 @@ if enabled_modules['lexicons']:
     from common_lib.common_lexicons.lexicons import lexSubj
     from common_lib.common_lexicons.lexicons import lexEmo
     from common_lib.common_lexicons.lexicons import lexAff
-
+    from common_lib.common_lexicons.lexicons import lexClus
+    from common_lib.common_lexicons.lexicons import lexInq
 
 def normalize(phrase):
     punc = string.punctuation.replace('#','')
@@ -189,7 +190,9 @@ def lexicon_features(phrase):
         features['S140-bi-max'      ]  = max(pos_bi_S140_scores)
         features['S140-bi-last_pos'] = pos_bi_S140_scores[-1]
 
-    #affObject = AffinLexicon()
+
+    """
+    #Add Affin Features
     affTotal = 0
     affDict = {n:0 for n in range(-5,6)}
     affLast = 0
@@ -202,8 +205,38 @@ def lexicon_features(phrase):
     features['Affin-Sum'] = affTotal
     for key in affDict:
         features[('Aff-score',key)] = affDict[key]
-    features['Aff-last'] = Afflast
+    features['Aff-last'] = affLast
 
+    """
+    #Add Brown Cluster Features
+    lastCLuster = None
+    clusterDict = lexClus.getBlankDict()
+    for word in phrase:
+        wordCluster = lexClus.getCluster(word)
+        if wordCluster != None:
+            clusterDict[wordCluster] += 1
+            lastCluster = wordCluster
+    for key in clusterDict:
+        features[('Cluster-count',key)] = clusterDict[key]
+    if lastCluster != None:
+        features[('Cluster-last',lastCluster)] = 1
+
+    """
+    #Add General Inquirer Features
+    lastTags = None
+    tagDict = lexInq.getBlankDict()
+    for word in phrase:
+        wordTags = lexInq.getTags(word)
+        if wordTags != None:
+            for tag in wordtags:
+                tagDict[tag] += 1
+            lastTags = wordTags
+    for key in tagDict:
+        features[('Tag-count',key)] = tagDict[key]
+    if lastTags != None:
+        for tag in lastTags:
+            features[('Tag-last',tag)] = 1
+    """
 
     #print features
     #print 
