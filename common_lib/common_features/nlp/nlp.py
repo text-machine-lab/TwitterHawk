@@ -84,12 +84,12 @@ class TwitterNLP:
             self._entities[twt] = [           t.split('/')[ -3]  for t in tags ]
             self._pos[twt]      = [           t.split('/')[ -2]  for t in tags ]
             self._events[twt]   = [           t.split('/')[ -1]  for t in tags ]
-            #print twt
-            #print self._words[twt]
-            #print self._entities[twt]
-            #print self._pos[twt]
-            #print self._events[twt]
-            #print
+            print 'tweet:    ', twt
+            print 'words:    ', self._words[twt]
+            print 'entities: ', self._entities[twt]
+            print 'POS:      ', self._pos[twt]
+            print 'events:   ', self._events[twt]
+            print
 
 
 

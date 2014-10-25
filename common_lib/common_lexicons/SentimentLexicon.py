@@ -29,7 +29,7 @@ class SentimentTriple:
         self.numNegative = n
 
     def __str__(self):
-        return str(self.score) + '  ' + str(self.numPositive) + '  ' + str(self.numNegative)
+        return '(' + str(self.score) + '  ' + str(self.numPositive) + '  ' + str(self.numNegative) + ')'
 
 
 
@@ -41,6 +41,7 @@ class SentimentLexicon:
         #Store data
         self._unigrams = defaultdict(lambda:SentimentTriple(0,0,0))
         self._bigrams  = defaultdict(lambda:SentimentTriple(0,0,0))
+        self._pairs    = defaultdict(lambda:SentimentTriple(0,0,0))
 
 
         # Files containing data
@@ -48,6 +49,7 @@ class SentimentLexicon:
         lexicon_dir = os.path.join(base_dir, lex_name)
         unigrams_f = os.path.join(lexicon_dir, 'unigrams-pmilexicon.txt')
         bigrams_f  = os.path.join(lexicon_dir,  'bigrams-pmilexicon.txt')
+        pairs_f    = os.path.join(lexicon_dir,    'pairs-pmilexicon.txt')
 
 
         # Populate table with unigrams
@@ -74,6 +76,25 @@ class SentimentLexicon:
         else:
             print >>sys.stderr, 'ERROR: Unable to read bigrams lexicon: ', lex_name
 
+        # Populate table with pairs 
+        if os.path.exists(pairs_f):
+            with open(pairs_f, 'r') as f:
+                for line in f.readlines():
+                    data = line.split('\t')
+                    toks = data[0].split('---')
+
+                    # If ensure all bi-uni are stored as uni-bi
+                    if len(toks[0].split()) == 2 and len(toks[1].split()) == 1:
+                        toks = [ toks[0], toks[1] ]
+
+                    toks = tuple(toks)
+                    self._pairs[toks] = SentimentTriple( float(data[1]) ,
+                                                           int(data[2]) ,
+                                                           int(data[3]) )
+        else:
+            print >>sys.stderr, 'ERROR: Unable to read pairs from lexicon: ', lex_name
+
+
 
     def lookupUnigram(self, unigram):
         return self._unigrams[unigram]
@@ -81,3 +102,5 @@ class SentimentLexicon:
     def lookupBigram(self, bigram):
         return self._bigrams[bigram]
 
+    def lookupPair(self, pair):
+        return self._pairs[pair]
