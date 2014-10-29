@@ -22,7 +22,8 @@ class InquirerLexicon( object ):
         for i,line in enumerate(open(filename).readlines()):
 
             if i == 0:
-                self.blankTagDict = {t:0 for t in line.strip('\n').split(',')[2:184]}
+                #self.blankTagDict = {t:0 for t in line.strip('\n').split(',')[2:184]}
+                pass
             else:
                 lineSplit = line.strip('\n').split(',')[:184]
                 word = lineSplit[0]
@@ -40,5 +41,5 @@ class InquirerLexicon( object ):
     def getTags(self, token):
         return self._data[token]
 
-    def getBlankDict(self):
-        return self.blankTagDict
+    #def getBlankDict(self):
+    #    return self.blankTagDict

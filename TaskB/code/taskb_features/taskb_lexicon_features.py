@@ -167,14 +167,18 @@ def brown_cluster_features(phrase):
 
     #Add Brown Cluster Features
     lastCLuster = None
-    clusterDict = lexClus.getBlankDict()
+    #clusterDict = lexClus.getBlankDict()
     for word in phrase:
         wordCluster = lexClus.getCluster(word)
         if wordCluster != None:
-            clusterDict[wordCluster] += 1
+            if ('Cluster-count',wordCluster) in features.keys():
+                features[('Cluster-count',wordCluster)] += 1
+            else:
+                features[('Cluster-count',wordCluster)] = 1
+            #clusterDict[wordCluster] += 1
             lastCluster = wordCluster
-    for key in clusterDict:
-        features[('Cluster-count',key)] = clusterDict[key]
+    #for key in clusterDict:
+    #    features[('Cluster-count',key)] = clusterDict[key]
     if lastCluster != None:
         features[('Cluster-last',lastCluster)] = 1
 
@@ -189,15 +193,19 @@ def general_inquirer_features(phrase):
 
     #Add General Inquirer Features
     lastTags = None
-    tagDict = lexInq.getBlankDict()
+    #tagDict = lexInq.getBlankDict()
     for word in phrase:
         wordTags = lexInq.getTags(word)
         if wordTags != None:
             for tag in wordtags:
-                tagDict[tag] += 1
+                if ('Tag-count',tag) in features.keys():
+                    features[('Tag-count',tag)] += 1
+                else:
+                    features[('Tag-count',tag)] = 1
+                #tagDict[tag] += 1
             lastTags = wordTags
-    for key in tagDict:
-        features[('Tag-count',key)] = tagDict[key]
+    #for key in tagDict:
+    #    features[('Tag-count',key)] = tagDict[key]
     if lastTags != None:
         for tag in lastTags:
             features[('Tag-last',tag)] = 1
@@ -308,16 +316,17 @@ def lexicon_features(phrase):
     features.update(   opinion_lexicon_features(phrase)                  )
     features.update( sentiment_lexicon_features(phrase,  'HTS', lexHTS ) )
     features.update( sentiment_lexicon_features(phrase, 'S140', lexS140) )
-    features.update(   emotion_lexicon_features(phrase)                  )
+    #features.update(   emotion_lexicon_features(phrase)                  )
     features.update(     brown_cluster_features(phrase)                  )
-    features.update(  general_inquirer_features(phrase)                  )
+
 
     # Heavier normalization (ex. spell correct & hashtag split)
     phrase = heavy_normalize(phrase)
 
     # Apply all general-purpose lexicons
     features.update( subjectivity_lexicon_features(phrase)                  )
-    features.update(        affin_lexicon_features(phrase)                  )
+    #features.update(        affin_lexicon_features(phrase)                  )
+    #features.update(  general_inquirer_features(phrase)                  )
 
 
     return features
