@@ -129,7 +129,7 @@ class FeaturesWrapper:
         # Tweet representation (list of tokens/strings)
         phrase = utilities.tokenize(tweet, self.twitter_nlp)
 
-        
+        """
         #add wordnet features     
         wnQueue = Queue.Queue()
         for word in phrase:
@@ -148,7 +148,7 @@ class FeaturesWrapper:
                 else:
                     for synset in queueList:
                         features[('term_wn_node',synset.name)] = 1
-        
+        """
 
         # TODO - Work on normalization of tweet unigrams
         # Feature: Normalized unigrams
