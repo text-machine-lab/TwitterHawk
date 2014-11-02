@@ -11,6 +11,7 @@ import sys, os
 import re
 import string
 import nltk.stem
+import numpy as np
 
 from BeautifulSoup import BeautifulSoup
 from HTMLParser    import HTMLParser
@@ -341,3 +342,13 @@ def is_elongated_punctuation(word):
     # No matches
     return False
 
+
+def normalize_data_matrix(X):
+    meanVector = np.mean(X, axis=0)
+    stdVector = np.std(X, axis=0)
+    for i,comp in enumerate(stdVector):
+        if comp == 0:
+            stdVector[i] = 1.
+    meanMatrix = np.kron(np.ones((X.shape[0], 1)), meanVector)
+    stdMatrix = np.kron(np.ones((X.shape[0], 1)), stdVector)
+    return (X-meanMatrix)/stdMatrix

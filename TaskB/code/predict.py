@@ -11,6 +11,10 @@ import glob
 import argparse
 import cPickle as pickle
 
+import sys
+sys.path.append(os.getenv('BISCUIT_DIR'))
+from common_lib.common_features.utilities import normalize_data_matrix
+
 from taskb_features.features import FeaturesWrapper
 from model import reverse_labels_map
 from note import Note
@@ -69,8 +73,9 @@ def main():
     for pfile in txt_files:
         note = Note()
         note.read(pfile)
-        X = zip(note.sid_list(), note.text_list())
-        
+        XNotNormalized = zip(note.sid_list(), note.text_list())
+        X = normalize_data_matrix(XNotNormalized)
+
         # Predict
         labels = predict( X, clf, vec )
 
@@ -94,8 +99,8 @@ def predict(X, clf, vec, feat_obj=None):
 
     # Vectorize feature dictionary
     # NOTE: do not fit() during predicting
-    vectorized = vec.transform(feats)
-
+    vectorizedNotNormalized = vec.transform(feats)
+    vectorized = normalize_data_matrix( vectorizedNotNormalized.toarray() )
     # predict
     labels = clf.predict(vectorized)
     labels = [ reverse_labels_map[y] for y in labels ]
