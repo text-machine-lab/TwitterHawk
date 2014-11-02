@@ -1,6 +1,7 @@
 from collections import defaultdict
 import os
 import sys
+from copy import copy
 #import re                                   
 
 
@@ -19,18 +20,18 @@ class ClusterLexicon( object ):
         # File containing data                                                              
         base_dir = enabled_modules['lexicons']
         filename = os.path.join(base_dir, 'BrownClusters/50mpaths2')
-        #clusterSet = set([])
+        clusterSet = set([])
         for line in open(filename).readlines():
 
             cluster, word = line.strip('\n').split('\t')[:2]
             self._data[word] = cluster
-            #clusterSet = clusterSet.union(set([cluster]))
+            clusterSet = clusterSet.union(set([cluster]))
         
-        #self.blankClusterDict = {c:0 for c in list(clusterSet)}
+        self.blankClusterDict = {c:0 for c in list(clusterSet)}
 
     def getCluster(self, token):
         return self._data[token]
          
-    #def getBlankDict(self):
-    #    return self.blankClusterDict
+    def getBlankDict(self):
+        return copy(self.blankClusterDict)
 

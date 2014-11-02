@@ -29,7 +29,6 @@ from common_lib.common_lexicons              import emoticons
 from common_lib.common_features              import utilities
 from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
-from common_lib.common_features.nlp          import nlp
 from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
 
@@ -38,13 +37,6 @@ from common_lib.common_features.twitter_data import twitter_data
 class FeaturesWrapper:
 
     def __init__(self):
-
-        # Tag/Chunk data with twitter_nlp
-        tagger = enabled_modules['twitter_nlp']
-        if tagger:
-            self.twitter_nlp = nlp.TwitterNLP(tagger)
-        else:
-            self.twitter_nlp = None
 
         # Tag/Chunk data with ark_tweet_nlp
         if enabled_modules['ark_tweet']:
@@ -81,8 +73,6 @@ class FeaturesWrapper:
         data = [ unicode(d.decode('utf-8')) for d in data ]
 
         # Batch update of external modules
-        if enabled_modules['twitter_nlp' ]:
-            self.twitter_nlp.resolve( data)
         if enabled_modules['twitter_data']:
             self.twitter_data.resolve(sids)
         if enabled_modules['ark_tweet'   ]:
@@ -112,22 +102,27 @@ class FeaturesWrapper:
         features = {}
 
 
-        # Feature: twitter_nlp features (cached based on unescaped text)
-        if enabled_modules['twitter_nlp']:
-            nlp_feats = self.twitter_nlp.features(tweet)
-            features.update(nlp_feats)
+        # Tweet representation (list of tokens/strings)
+        phrase = utilities.tokenize(tweet, self.ark_tweet)
+
+
+        # Feature: Stemmed Tokens
+        normalized_stems = utilities.normalize_phrase_TaskB(phrase, stem=True)
+        for word in normalized_stems:
+            features[('stemmed_unigram_tok', word)] = 1
+
+
+        # Feature: Lexicon Features
+        if enabled_modules['lexicons']:
+            feats = lexicon_features(phrase)
+            features.update(feats)
+
 
         # Feature: ark_tweet features (cached based on unescaped text)
         if enabled_modules['ark_tweet']:
             ark_feats = self.ark_tweet.features(tweet)
             features.update(ark_feats)
 
-
-
-        # Tweet representation
-
-        # Tweet representation (list of tokens/strings)
-        phrase = utilities.tokenize(tweet, self.twitter_nlp)
 
         """
         #add wordnet features     
@@ -150,17 +145,8 @@ class FeaturesWrapper:
                         features[('term_wn_node',synset.name)] = 1
         """
 
-        # TODO - Work on normalization of tweet unigrams
-        # Feature: Normalized unigrams
-        normalized_stems = utilities.normalize_phrase_TaskB(phrase, stem=True)
-        #print tweet
-        for word in normalized_stems:
-            #print '\t', word
-            features[('term_unigram', word)] = 1
-        #print
 
-
-        # Feature: twitter_nlp features
+        # Feature: twitter_data features
         if enabled_modules['twitter_data']:
             tdata_feats = self.twitter_data.features(sid)
             features.update(tdata_feats)
@@ -173,11 +159,6 @@ class FeaturesWrapper:
                 feats = self.url.features(url)
                 features.update(feats)
 
-
-        # Feature: Lexicon Features
-        if enabled_modules['lexicons']:
-            feats = lexicon_features(phrase)
-            features.update(feats)
 
 
         # Feature: Split hashtag

@@ -40,7 +40,6 @@ class ArkTweetNLP:
         # Resolve and cache all currently uncached tweets
         self.resolve(data)
 
-        print 'ARK-TWEET-FEATURES-NOT-IMPLEMENTED'
 
     def resolve(self, data):
 
@@ -69,19 +68,16 @@ class ArkTweetNLP:
 
         #print 'TAGGED DATA'
         #print tagged
-        return
 
         # Store the data in the object
+        self._toks = {}
+        self._pos  = {}
         for twt,tags in zip(data,tagged):
-            self._words[twt]    = [  '/'.join(t.split('/')[:-3]) for t in tags ]
-            self._entities[twt] = [           t.split('/')[ -3]  for t in tags ]
-            self._pos[twt]      = [           t.split('/')[ -2]  for t in tags ]
-            self._events[twt]   = [           t.split('/')[ -1]  for t in tags ]
+            self._toks[twt] = [ t[0] for t in tags ]
+            self._pos[twt]  = [ t[1] for t in tags ]
             #print 'tweet:    ', twt
-            #print 'words:    ', self._words[twt]
-            #print 'entities: ', self._entities[twt]
+            #print 'words:    ', self._toks[twt]
             #print 'POS:      ', self._pos[twt]
-            #print 'events:   ', self._events[twt]
             #print
 
 
@@ -95,11 +91,13 @@ class ArkTweetNLP:
 
         @param data. A list of strings (each string is the text of a tweet)
         """
-
-
-        return [] 
-
         self.resolve(data)
+
+
+
+    def tokens(self, txt):
+        key = self.h.unescape(txt).strip()
+        return self._toks[key]
 
 
 
@@ -114,26 +112,11 @@ class ArkTweetNLP:
         @return      A feature dictionary.
         """
 
-
-        return {}
-
         # Feature dictionary
         feats = {}
 
         # Escape text if not already done
         twt = self.h.unescape(twt).strip()
-
-        # Feature: Entity types
-        ents = self.entities(twt)
-        for ent in ents:
-            feats[ ('entity_type', ent[0]) ] = .5
-            feats[ ('entity',      ent[1]) ] = .5
-
-        # Feature: Brown Cluster bigrams
-        clustered = self.brown(twt)
-        for i in range(len(clustered)-1):
-            bigram = clustered[i:i+2]
-            feats[ ('brown_bigram',(clustered[i],clustered[i+1])) ] = .5
 
         # Feature: POS counts
         pos_counts = defaultdict(lambda:0)        
@@ -144,7 +127,7 @@ class ArkTweetNLP:
             featname = 'pos_count-%s' % pos
             feats[featname] = count
 
-        #print 'nlp: ', twt
+        #print 'ARK: ', twt
         #print '\t', feats
 
         return feats
@@ -170,7 +153,7 @@ def main():
     twts = [ line.split('\t')[3].strip('\n')  for  line  in  args.tweets.readlines() ]
     
     # Run twitter_nlp on data
-    t_nlp = TwitterNLP(twts)
+    t_nlp = ArkTweetNLP(twts)
 
     # Display tokenized data
     toks = [ t_nlp.tokens(twt)  for  twt  in  twts ]

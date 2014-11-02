@@ -213,7 +213,6 @@ def general_inquirer_features(phrase):
         #print word
         wordTags = lexInq.getTags(word)
         if wordTags != None:
-<<<<<<< HEAD
             for tag in wordTags:
                 #print '\t', tag
                 tagDict[tag] += 1
@@ -222,17 +221,6 @@ def general_inquirer_features(phrase):
     for key in tagDict:
         if tagDict[key] > 0:
             features[('Tag-count',key)] = tagDict[key]
-=======
-            for tag in wordtags:
-                if ('Tag-count',tag) in features.keys():
-                    features[('Tag-count',tag)] += 1
-                else:
-                    features[('Tag-count',tag)] = 1
-                #tagDict[tag] += 1
-            lastTags = wordTags
-    #for key in tagDict:
-    #    features[('Tag-count',key)] = tagDict[key]
->>>>>>> b7d2a3c3955126eba3abd7e2d8f4fa102319b942
     if lastTags != None:
         for tag in lastTags:
             features[('Tag-last',tag)] = 1
