@@ -25,16 +25,16 @@ from common_lib.common_features import utilities
 
 class TwitterData:
 
-    def __init__(self, sids=[]):
+    def __init__(self, sids=[], data=[]):
         # Tweet cache
         self.cache = Cache('twitter_data')
 
         # Cache all given data
-        self.resolve(sids)
+        self.resolve(sids, data)
 
 
 
-    def resolve(self, sids):
+    def resolve(self, sids, data):
 
         """
         resolve()
@@ -57,7 +57,17 @@ class TwitterData:
                 self.cache.add_map(sid,twt)
 
         # Get all tweets
-        return [  self.cache.get_map(sid)  for  sid  in  sids  ]
+        resolved = []
+        for txt,sid in zip(data,sids):
+            twt = self.cache.get_map(sid)
+            if txt == twt['text']:
+                res = twt
+            else:
+                res = None
+            #print 'res: ', res
+            resolved.append(res)
+
+        return resolved
 
 
 
@@ -74,6 +84,8 @@ class TwitterData:
 
         # Get tweet
         tweet = self.cache.get_map(sid)
+
+        if tweet == None: return {}
 
         # Extract features
         feats = {}

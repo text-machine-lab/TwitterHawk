@@ -69,12 +69,14 @@ class FeaturesWrapper:
         sids = [ x[0] for x in X ]
         data = [ x[1] for x in X ]
 
+        # Batch retrieval of twitter metadata
+        if enabled_modules['twitter_data']:
+            self.twitter_data.resolve(sids, data)
+
         # Remove weird characters
         data = [ unicode(d.decode('utf-8')) for d in data ]
 
         # Batch update of external modules
-        if enabled_modules['twitter_data']:
-            self.twitter_data.resolve(sids)
         if enabled_modules['ark_tweet'   ]:
             self.ark_tweet.resolve( data)
 
@@ -112,6 +114,15 @@ class FeaturesWrapper:
             features[('stemmed_unigram_tok', word)] = 1
 
 
+        # Feature: twitter_data features
+        if enabled_modules['twitter_data']:
+            tdata_feats = self.twitter_data.features(sid)
+            features.update(tdata_feats)
+
+
+        return features
+
+
         # Feature: Lexicon Features
         if enabled_modules['lexicons']:
             feats = lexicon_features(phrase)
@@ -124,7 +135,6 @@ class FeaturesWrapper:
             features.update(ark_feats)
 
 
-        """
         #add wordnet features     
         wnQueue = Queue.Queue()
         for word in phrase:
@@ -143,13 +153,6 @@ class FeaturesWrapper:
                 else:
                     for synset in queueList:
                         features[('term_wn_node',synset.name)] = 1
-        """
-
-
-        # Feature: twitter_data features
-        if enabled_modules['twitter_data']:
-            tdata_feats = self.twitter_data.features(sid)
-            features.update(tdata_feats)
 
 
         # Feature: URL Features
