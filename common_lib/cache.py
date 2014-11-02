@@ -15,14 +15,14 @@ import cPickle as pickle
 
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
+BASE_DIR = '/data1/nlp-data/twitter-caches'
 
 
 
 class Cache:
     def __init__(self, name):
         print '\tcache constructor (%s_cache)' % name
-        self.filename = os.path.join(BASE_DIR, 'etc/%s_cache' % name)
+        self.filename = os.path.join(BASE_DIR, '%s_cache' % name)
 
         try:
             self.cache = pickle.load( open( self.filename ,"rb" ) )

@@ -1,5 +1,5 @@
 lexicons     /data1/nlp-data/twitter-lexicons
-twitter_nlp  None /data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py
-twitter_data None True
-url          None True
-hashtag      None /data1/wboag/biscuit/Biscuit/TaskB/etc/hashtag
+twitter_nlp  /data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py
+twitter_data True
+url          True
+hashtag      /data1/nlp-data/twitter-hashtag
