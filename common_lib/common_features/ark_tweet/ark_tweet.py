@@ -16,16 +16,19 @@ import string
 from HTMLParser import HTMLParser
 
 
-from ark_tweet_nlp_python import CMUTweetTagger
-
-
-
 # Add common-lib code to system path
 sources = os.getenv('BISCUIT_DIR')
 if sources not in sys.path: sys.path.append(sources)
 
 from common_lib.cache import Cache
 from common_lib.read_config import enabled_modules
+
+
+ark_sources = enabled_modules['ark_tweet']
+if ark_sources:
+    if ark_sources not in sys.path: sys.path.append(ark_sources)
+    import CMUTweetTagger
+
 
 
 class ArkTweetNLP:
