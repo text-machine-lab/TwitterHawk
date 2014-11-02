@@ -24,15 +24,12 @@ from taskb_lexicon_features import lexicon_features
 # Add common-lib code to system path
 sources = os.getenv('BISCUIT_DIR')
 if sources not in sys.path: sys.path.append(sources)
-
 from common_lib.read_config                  import enabled_modules
-
 from common_lib.common_lexicons              import emoticons
-
 from common_lib.common_features              import utilities
 from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
-from common_lib.common_features.nlp          import nlp
+from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
 
 
@@ -41,12 +38,11 @@ class FeaturesWrapper:
 
     def __init__(self):
 
-        # Tag/Chunk data with twitter_nlp
-        tagger = enabled_modules['twitter_nlp']
-        if tagger:
-            self.twitter_nlp = nlp.TwitterNLP(tagger)
+        # Tag/Chunk data with ark_tweet_nlp
+        if enabled_modules['ark_tweet']:
+            self.ark_tweet = ark_tweet.ArkTweetNLP()
         else:
-            self.twitter_nlp = None
+            self.ark_tweet = None
 
         # Lookup tweet metadata
         if enabled_modules['twitter_data']:
@@ -69,15 +65,18 @@ class FeaturesWrapper:
         @return       A list of feature dictionaries
         """
 
-        # data   - A list of list of the medical text's words
+        # data   - A list of strings
         sids = [ x[0] for x in X ]
         data = [ x[1] for x in X ]
 
+        # Remove weird characters
+        data = [ unicode(d.decode('utf-8')) for d in data ]
+
         # Batch update of external modules
-        if enabled_modules['twitter_nlp' ]:
-            self.twitter_nlp.resolve( data)
         if enabled_modules['twitter_data']:
             self.twitter_data.resolve(sids)
+        if enabled_modules['ark_tweet'   ]:
+            self.ark_tweet.resolve( data)
 
         # Get features for each tweet
         features_list= [ self.features_for_tweet(t,s) for t,s in zip(data,sids) ]
@@ -103,17 +102,27 @@ class FeaturesWrapper:
         features = {}
 
 
-        # Feature: twitter_nlp features (cached based on unescaped text)
-        if enabled_modules['twitter_nlp']:
-            nlp_feats = self.twitter_nlp.features(tweet)
-            features.update(nlp_feats)
-
-
-
-        # Tweet representation
-
         # Tweet representation (list of tokens/strings)
-        phrase = utilities.tokenize(tweet, self.twitter_nlp)
+        phrase = utilities.tokenize(tweet, self.ark_tweet)
+
+
+        # Feature: Stemmed Tokens
+        normalized_stems = utilities.normalize_phrase_TaskB(phrase, stem=True)
+        for word in normalized_stems:
+            features[('stemmed_unigram_tok', word)] = 1
+
+
+        # Feature: Lexicon Features
+        if enabled_modules['lexicons']:
+            feats = lexicon_features(phrase)
+            features.update(feats)
+
+
+        # Feature: ark_tweet features (cached based on unescaped text)
+        if enabled_modules['ark_tweet']:
+            ark_feats = self.ark_tweet.features(tweet)
+            features.update(ark_feats)
+
 
         """
         #add wordnet features     
@@ -136,17 +145,8 @@ class FeaturesWrapper:
                         features[('term_wn_node',synset.name)] = 1
         """
 
-        # TODO - Work on normalization of tweet unigrams
-        # Feature: Normalized unigrams
-        normalized_stems = utilities.normalize_phrase_TaskB(phrase, stem=True)
-        #print tweet
-        for word in normalized_stems:
-            #print '\t', word
-            features[('term_unigram', word)] = 1
-        #print
 
-
-        # Feature: twitter_nlp features
+        # Feature: twitter_data features
         if enabled_modules['twitter_data']:
             tdata_feats = self.twitter_data.features(sid)
             features.update(tdata_feats)
@@ -159,11 +159,6 @@ class FeaturesWrapper:
                 feats = self.url.features(url)
                 features.update(feats)
 
-
-        # Feature: Lexicon Features
-        if enabled_modules['lexicons']:
-            feats = lexicon_features(phrase)
-            features.update(feats)
 
 
         # Feature: Split hashtag
@@ -198,12 +193,14 @@ class FeaturesWrapper:
         features[ ('contains_long_word',contains_long_word) ] = 1
         '''
 
-
         '''
+        print '\n\n'
+        print phrase
+
         # Result: Worse (except for 3-grams with .5 weight)
         # Features: N-grams
-        #vals = [2,3,4]
-        vals = [3]
+        vals = [2,3,4]
+        #vals = [3]
         for n in vals:
             for i in range(len(phrase)-n+1):
 
@@ -215,15 +212,16 @@ class FeaturesWrapper:
                 tup = eval( "('" + "', '".join(ngram) + "')" )
                 featname = ( '%d-gram'%n, tup  )
                 features[featname] = .5
-                #print '\t', ngram
+                print
+                print '\t', ngram
 
-                #for j in range(n):
-                #    words = copy(ngram)
-                #    words[j] = '*'
-                #    tup = eval( "('" + "', '".join(words) + "')" )
-                #    featname = ( 'noncontiguous-%d-gram'%n, tup  )
-                #    features[featname] = 1
-                #    #print tup
+                for j in range(1,n-1):
+                    words = copy(ngram)
+                    words[j] = '*'
+                    tup = eval( "('" + "', '".join(words) + "')" )
+                    featname = ( 'noncontiguous-%d-gram'%n, tup  )
+                    features[featname] = 1
+                    print '\t\t', tup
         '''
 
 

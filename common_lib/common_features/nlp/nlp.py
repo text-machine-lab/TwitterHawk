@@ -24,13 +24,15 @@ sources = os.getenv('BISCUIT_DIR')
 if sources not in sys.path: sys.path.append(sources)
 
 from common_lib.cache import Cache
+from common_lib.read_config import enabled_modules
 
 
 class TwitterNLP:
 
     def __init__(self, tagger, data=[]):
         # Lookup cache (constantly rerunning tagger takes time)
-        self.cache = Cache('twitter_nlp')
+        cache_file = os.path.join(enabled_modules['caches'], 'twitter_nlp')
+        self.cache = Cache(cache_file)
 
         # Output from the tagger
         self._words    = {}

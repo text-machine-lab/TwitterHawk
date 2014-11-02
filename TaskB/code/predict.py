@@ -105,6 +105,8 @@ def predict(X, clf, vec, feat_obj=None):
     labels = clf.predict(vectorized)
     labels = [ reverse_labels_map[y] for y in labels ]
 
+    #print '\n\n'
+
     #print clf
     #print '\n\n'
     #for k,v in vars(clf).items():
@@ -112,6 +114,12 @@ def predict(X, clf, vec, feat_obj=None):
     #    print '\t', v
     #    print
     #print
+
+    #print '\n\n'
+
+    #print clf.decision_function(vectorized)
+
+    #print '\n\n'
 
     return labels
 

@@ -49,22 +49,22 @@ h = HTMLParser()
 taska_tokenizations = []
 
 
-def tokenize(text, nlp=None):
+def tokenize(text, ark_tweet=None):
 
     # FIXME - Save original token indices/alignment, send to tokenizer, re-align better tokens
     #         with training data tokens
 
 
     # Use twitter_nlp tokenzier, if available
-    if nlp:
-        return nlp.tokens(text)
+    if ark_tweet:
+        return ark_tweet.tokens(text)
     else:
         return text.split()
 
 
 
 # Slightly different for TaskA vs. TaskB
-def normalize_phrase_TaskA(sentence, nlp=None, stem=False):
+def normalize_phrase_TaskA(sentence, ark_tweet=None, stem=False):
 
     # Preserve old indices
     indices = []
@@ -89,7 +89,7 @@ def normalize_phrase_TaskA(sentence, nlp=None, stem=False):
     reconstructed.append(text[start:])
 
     # Tokenize
-    toks = tokenize(text, nlp)
+    toks = tokenize(text, ark_tweet)
 
     print toks
 
@@ -156,9 +156,7 @@ def normalize_phrase(phrase, stem=False):
 
     retVal = []
 
-
     negated = False
-    end_negated = False
     for words in phrase:
 
         toks = []
@@ -211,24 +209,17 @@ def normalize_phrase(phrase, stem=False):
                 negated = False
                 tok = ['http://someurl']
 
-            # Un-cleaned HTML stopword
-            elif word == '&amp;':
-                tok = []
-
             # Simple word
             else:
-                done_neg = (word[-1] in string.punctuation)
-
                 word = word.strip(string.punctuation)
                 if word in stop_words:
                     tok = []
                 else:
                     if stem:
+                        word = word.decode('ascii','ignore')
                         word = st.stem(word)
                     if negated: word = word + '_neg'
                     tok = [word]
-
-                if done_neg: negated = False
 
             toks += tok
 

@@ -1,5 +1,6 @@
-lexicons     /data1/nlp-data/twitter-lexicons
-twitter_nlp  /data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py
-twitter_data True
+lexicons     /data1/nlp-data/twitter/data/lexicons
+twitter_data None True
 url          True
-hashtag      /data1/nlp-data/twitter-hashtag
+hashtag      /data1/wboag/biscuit/Biscuit/TaskB/etc/hashtag
+caches       /data1/nlp-data/twitter/data/caches/
+ark_tweet    True 

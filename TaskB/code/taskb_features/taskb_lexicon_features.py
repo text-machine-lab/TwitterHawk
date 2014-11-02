@@ -22,12 +22,14 @@ from common_lib.read_config import enabled_modules
 if enabled_modules['lexicons']:
     from common_lib.common_lexicons.lexicons import lexHTS
     from common_lib.common_lexicons.lexicons import lexS140
-    from common_lib.common_lexicons.lexicons import lexOpi
     from common_lib.common_lexicons.lexicons import lexSubj
+    from common_lib.common_lexicons.lexicons import lexOpi
     from common_lib.common_lexicons.lexicons import lexEmo
     from common_lib.common_lexicons.lexicons import lexAff
     from common_lib.common_lexicons.lexicons import lexClus
     from common_lib.common_lexicons.lexicons import lexInq
+
+
 
 def light_normalize(phrase):
     return [  word.lower()  for  word  in  phrase  ]
@@ -61,6 +63,31 @@ def average(lst):
 
 def is_positive(score): 
     return score > 0
+
+
+def scores_to_features(scores, lexName, featName):
+    features = {}
+
+    # Three most influential sentiments (AKA scores with largest abs value)
+    #influential = k_most_influential(scores, 3)
+    #
+    # Add influential scores to feature dict
+    #for i,score in enumerate(influential):
+    #    features[  '%s-%s-influential-%d' % (lexName,featName,i) ] = score
+
+    # Average scores
+    features['%s-%s-avg_score' % (lexName,featName)] = average(scores)
+
+    # List of positive scores
+    pos_scores = filter(is_positive, scores)
+
+    # num_of_positive, max_score, last_positive
+    features['%s-%s-positive_count' % (lexName,featName)]  =  len(pos_scores)
+    features['%s-%s-max'            % (lexName,featName)]  = max0(    scores)
+    if len(pos_scores):
+        features['%s-%s-last_pos'   % (lexName,featName)]  =   pos_scores[-1]
+
+    return features
 
 
 
@@ -109,30 +136,17 @@ def subjectivity_lexicon_features(phrase):
 
 def emotion_lexicon_features(phrase):
 
-    features = {}
-
     # Emotion Scores
     lexEmo_uni_scores = defaultdict(lambda:[])
     for w in phrase:
         senti = lexEmo.lookup(w)
         lexEmo_uni_scores[senti[0]].append( senti[1] )
 
-    # for each emotion: avg_score, num_positive, max_positive, last_positive
-    feats = {}
+    # Get features for each kind of emotion
+    features = {}
     for e,scores in lexEmo_uni_scores.items():
-        pos  = filter(is_positive, scores)
-        features[ 'Emo-uni-%s-avg'            % e ] = average(scores)
-        features[ 'Emo-uni-%s-positive_count' % e ] =  len(pos)
-        features[ 'Emo-uni-%s-max'            % e ] = max0(pos)
-        if len(pos):
-            features[ 'Emo-uni-%s-last_pos' % e ] = pos[-1]
-
-    # for each emotion: 3 most influential scores
-    for e,scores in lexEmo_uni_scores.items():
-        inf_Emo = k_most_influential(scores, 3)
-        for i,score in enumerate(inf_Emo):
-            features[ 'Emo-%s-unigram-influential-%d' % (e,i) ] = score
-        features[('Emo-count',e)] = len(scores)
+        emotion_feats = scores_to_features(scores, 'Emo', e)
+        features.update(emotion_feats)
 
     return features
 
@@ -166,8 +180,8 @@ def brown_cluster_features(phrase):
     features = {}
 
     #Add Brown Cluster Features
-    lastCLuster = None
-    #clusterDict = lexClus.getBlankDict()
+    lastCluster = None
+    clusterDict = lexClus.getBlankDict()
     for word in phrase:
         wordCluster = lexClus.getCluster(word)
         if wordCluster != None:
@@ -177,8 +191,9 @@ def brown_cluster_features(phrase):
                 features[('Cluster-count',wordCluster)] = 1
             #clusterDict[wordCluster] += 1
             lastCluster = wordCluster
-    #for key in clusterDict:
-    #    features[('Cluster-count',key)] = clusterDict[key]
+    for key in clusterDict:
+        if clusterDict[key] > 0:
+            features[('Cluster-count',key)] = clusterDict[key]
     if lastCluster != None:
         features[('Cluster-last',lastCluster)] = 1
 
@@ -195,17 +210,17 @@ def general_inquirer_features(phrase):
     lastTags = None
     #tagDict = lexInq.getBlankDict()
     for word in phrase:
+        #print word
         wordTags = lexInq.getTags(word)
         if wordTags != None:
-            for tag in wordtags:
-                if ('Tag-count',tag) in features.keys():
-                    features[('Tag-count',tag)] += 1
-                else:
-                    features[('Tag-count',tag)] = 1
-                #tagDict[tag] += 1
+            for tag in wordTags:
+                #print '\t', tag
+                tagDict[tag] += 1
             lastTags = wordTags
-    #for key in tagDict:
-    #    features[('Tag-count',key)] = tagDict[key]
+        #print
+    for key in tagDict:
+        if tagDict[key] > 0:
+            features[('Tag-count',key)] = tagDict[key]
     if lastTags != None:
         for tag in lastTags:
             features[('Tag-last',tag)] = 1
@@ -217,36 +232,14 @@ def general_inquirer_features(phrase):
 
 def sentiment_lexicon_features(phrase, lexName, lex):
 
-    # FIXME / TODO - Follow paper very closely
-    def scores_to_features(scores, featName):
-        features = {}
-
-        # Three most influential sentiments (AKA scores with largest abs value)
-        influential = k_most_influential(scores, 3)
-
-        # Add influential scores to feature dict
-        for i,score in enumerate(influential):
-            features[  '%s-%s-influential-%d' % (lexName,featName,i) ] = score
-
-        # Average scores
-        features['%s-%s-avg_score' % (lexName,featName)] = average(scores)
-
-        # List of positive scores
-        pos_scores = filter(is_positive, scores)
-
-        # num_of_positive, max_positive, last_positive
-        features['%s-%s-positive_count' % (lexName,featName)]  =  len(pos_scores)
-        features['%s-%s-max'            % (lexName,featName)]  = max0(pos_scores)
-        if len(pos_scores):
-            features['%s-%s-last_pos'   % (lexName,featName)]  =   pos_scores[-1]
-
-        return features
-
-
     # Unigram features
     def sentiment_lexicon_unigram_features():
+        # Build unigram scores
         uni_scores  = [ lex.lookupUnigram(w).score  for  w  in  phrase  ]
-        return scores_to_features(uni_scores, 'unigram')
+
+        # Get features for unigrams
+        return scores_to_features(uni_scores, lexName, 'unigram')
+
 
     # Bigram features
     def sentiment_lexicon__bigram_features():
@@ -255,7 +248,9 @@ def sentiment_lexicon_features(phrase, lexName, lex):
         for i in range(len(phrase) - 1):
             bigram = (phrase[i], phrase[i+1])
             bi_scores.append( lex.lookupBigram(bigram).score )
-        return scores_to_features(bi_scores, 'bigram')
+
+        # Get features for bigrams
+        return scores_to_features(bi_scores, lexName, 'bigram')
 
 
     def sentiment_lexicon___pairs_features():
@@ -282,7 +277,8 @@ def sentiment_lexicon_features(phrase, lexName, lex):
                 pairs.append( (bigram,bi) )
         pair_scores  = [  lex.lookupPair(p).score  for  p  in  pairs  ]
 
-        return scores_to_features(pair_scores, 'pairs')
+        # Get features for pairs
+        return scores_to_features(pair_scores, lexName, 'pairs')
 
 
     # Call helper functions and combine results
@@ -328,6 +324,9 @@ def lexicon_features(phrase):
     #features.update(        affin_lexicon_features(phrase)                  )
     #features.update(  general_inquirer_features(phrase)                  )
 
+    #if features:
+    #    print features
+    #    print '\n\n'
 
     return features
 
