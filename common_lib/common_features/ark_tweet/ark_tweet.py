@@ -1,5 +1,5 @@
 ######################################################################
-#  CliCon - nlp.py                                                   #
+#  CliCon - ark_tweet.py                                             #
 #                                                                    #
 #  Willie Boag                                      wboag@cs.uml.edu #
 #                                                                    #
@@ -16,7 +16,8 @@ import string
 from HTMLParser import HTMLParser
 
 
-import interface_nlp
+from ark_tweet_nlp_python import CMUTweetTagger
+
 
 
 # Add common-lib code to system path
@@ -27,58 +28,48 @@ from common_lib.cache import Cache
 from common_lib.read_config import enabled_modules
 
 
-class TwitterNLP:
+class ArkTweetNLP:
 
-    def __init__(self, tagger, data=[]):
+    def __init__(self, data=[]):
         # Lookup cache (constantly rerunning tagger takes time)
-        cache_file = os.path.join(enabled_modules['caches'], 'twitter_nlp')
-        self.cache = Cache(cache_file)
-
-        # Output from the tagger
-        self._words    = {}
-        self._entities = {}
-        self._pos      = {}
-        self._events   = {}
+        self.cache = Cache('ark_tweet')
 
         # Unescape data
         self.h = HTMLParser()
 
-        # Resolve tweets
-        self.tagger = tagger
+        # Resolve and cache all currently uncached tweets
         self.resolve(data)
 
+        print 'ARK-TWEET-FEATURES-NOT-IMPLEMENTED'
 
     def resolve(self, data):
 
         #print 'resolve length: ', len(data)
 
-        data = [ self.h.unescape(twt).strip() for twt in set(data) ]
+        data = [self.h.unescape(twt).strip() for twt in set(data)]
 
-        # Tag the data
-        if self.tagger:
+        # Tag all uncached data
+        uncached = [ twt for twt in data if not self.cache.has_key(twt) ]
 
-            # Tag all uncached data
-            uncached = [ twt for twt in data if not self.cache.has_key(twt) ]
+        #print uncached
+        #print 'len     : ', len(uncached)
+        #print 'uncached: '
+        #for twt in uncached: print '\t', twt
+        #print '\n\n\n'
 
-            #print uncached
-            #print 'len     : ', len(uncached)
-            #print 'uncached: '
-            #for twt in uncached: print '\t', twt
-            #print '\n\n\n'
+        if uncached:
+            #print 'uncached: ', uncached
+            partial = CMUTweetTagger.runtagger_parse(uncached)
+            #print 'partial: ', partial
+            for twt,tag in zip(uncached,partial):
+                self.cache.add_map(twt, tag)
 
-            if uncached:
-                if self.tagger == 'cache':
-                    msg = 'Uncached twitter_nlp data. Tagger must be installed.'
-                    raise Exception(msg)
-                partial = interface_nlp.resolve(self.tagger, uncached)
-                for twt,tag in zip(uncached,partial):
-                    self.cache.add_map(twt, tag)
+        # Lookup all tags
+        tagged = [ self.cache.get_map(twt) for twt in data ]
 
-            # Lookup all tags
-            tagged = [ self.cache.get_map(twt) for twt in data ]
-
-        else:
-            tagged = []
+        #print 'TAGGED DATA'
+        #print tagged
+        return
 
         # Store the data in the object
         for twt,tags in zip(data,tagged):
@@ -95,89 +86,6 @@ class TwitterNLP:
 
 
 
-    def tokens(self, twt):
-        twt = self.h.unescape(twt).strip()
-        if twt not in self._words: 
-            print 'not in: ', twt
-            return []
-        else:
-            return self._words[twt]
-
-
-
-    def entities(self, twt):
-        twt = self.h.unescape(twt).strip()
-
-        etype = None
-        ents = []
-        curr = []
-
-        #print twt
-        if twt not in self._words: return []
-
-        for i in range(len(self._words[twt])):
-            w   = self._words[   twt][i]
-            tag = self._entities[twt][i]
-            #print '\t', w, '\t', tag
-
-            # Assumes 'I' never comes before a 'O'
-            if tag[0] == 'I':
-                curr.append(w)
-            else:
-                if curr:
-                    ents.append( (etype,' '.join(curr)) )
-                    curr = []
-
-                if tag[0] == 'B':
-                    etype = tag[2:]
-                    curr = [w]
-
-        # Flush remaining entity (if necessary)
-        if curr: ents.append( (etype,' '.join(curr)) )
-
-        #print ents
-        return ents
-
-
-
-
-    def brown(self, twt):
-        twt = self.h.unescape(twt).strip()
-
-        etype = None
-        ents = []
-        curr = []
-
-        #print twt
-        if twt not in self._words: return []
-
-        for i in range(len(self._words[twt])):
-            w   = self._words[   twt][i]
-            tag = self._entities[twt][i]
-            #print '\t', w, '\t', tag
-
-            # Replace non-'O' with entity label
-            if tag[0] != 'I':
-                if curr:
-                    ents.append( ' '.join(curr) )
-                    curr = []
-
-                if tag[0] == 'B':
-                    curr = [tag[2:]]
-                else:
-                    curr = [w]
-
-
-        # Flush remaining entity (if necessary)
-        if curr: ents.append( ' '.join(curr) )
-
-        #print ents
-        #print 
-
-        return ents
-
-
-
     def update(self, data):
 
         """
@@ -187,6 +95,9 @@ class TwitterNLP:
 
         @param data. A list of strings (each string is the text of a tweet)
         """
+
+
+        return [] 
 
         self.resolve(data)
 
@@ -202,6 +113,9 @@ class TwitterNLP:
         @param twt.  The string text of a tweet.
         @return      A feature dictionary.
         """
+
+
+        return {}
 
         # Feature dictionary
         feats = {}
@@ -249,23 +163,14 @@ def main():
                         type=argparse.FileType('r')
                        )
 
-    parser.add_argument('--tagger',
-                        dest = 'tagger',
-                        default = '/data1/wboag/biscuit/Biscuit/TaskB/etc/twitter_nlp/python/ner/extractEntities2.py'
-                       )
-
-
     args = parser.parse_args()
 
 
     # Read data from file
     twts = [ line.split('\t')[3].strip('\n')  for  line  in  args.tweets.readlines() ]
     
-    # twitter_nlp tagger
-    tagger = args.tagger
-
     # Run twitter_nlp on data
-    t_nlp = TwitterNLP(tagger, twts)
+    t_nlp = TwitterNLP(twts)
 
     # Display tokenized data
     toks = [ t_nlp.tokens(twt)  for  twt  in  twts ]

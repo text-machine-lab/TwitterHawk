@@ -21,8 +21,8 @@ from common_lib.read_config import enabled_modules
 
 # Add trie module to path
 trie_module = enabled_modules['hashtag']
-print trie_module
 if trie_module:
+    print trie_module
     if trie_module not in sys.path: sys.path.append(trie_module)
     import patricia
     _dictionary = patricia.trie()
