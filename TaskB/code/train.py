@@ -28,13 +28,16 @@ from sklearn import svm
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
+from sklearn.preprocessing import normalize as norm_mat
 
 from sklearn.linear_model import LogisticRegression
 
+"""
 import sys
 sys.path.append(os.getenv('BISCUIT_DIR'))
 from common_lib.common_features.utilities import normalize_data_matrix
-
+from scipy.sparse import csr_matrix
+"""
 
 BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
 
@@ -133,14 +136,18 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
     # Vectorize feature dictionary
     # NOTE: import to fit() during training
     vec = DictVectorizer()
-    XNotNormalized = vec.fit_transform(feats)
+    #XNotNormalized = vec.fit_transform(feats)
+    X = vec.fit_transform(feats)
     #print 'first: ', type(XNotNormalized.todense().view(type=np.ndarray))
     #print 'first: ', type(XNotNormalized.toarray())
     #print XNotNormalized.size
     #X = normalize_data_matrix(XNotNormalized)
     #XNotNormalized = np.ones((100,200))
     #print 'second: ', type(XNotNormalized)
-    X = normalize_data_matrix(XNotNormalized.toarray())
+    #print 'start norm'
+    #X = csr_matrix( normalize_data_matrix(XNotNormalized.toarray()) )
+    #print 'done norm'
+    norm_mat( X , axis=0 , copy=False)
     """once normalized, use sparse.csr_matrix(A) to convert back to sparse?"""
     # Grid Search
     if grid:

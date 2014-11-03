@@ -11,9 +11,13 @@ import glob
 import argparse
 import cPickle as pickle
 
+"""
 import sys
 sys.path.append(os.getenv('BISCUIT_DIR'))
 from common_lib.common_features.utilities import normalize_data_matrix
+from scipy.sparse import csr_matrix
+"""
+from sklearn.preprocessing import normalize as norm_mat
 
 from taskb_features.features import FeaturesWrapper
 from model import reverse_labels_map
@@ -99,8 +103,12 @@ def predict(X, clf, vec, feat_obj=None):
 
     # Vectorize feature dictionary
     # NOTE: do not fit() during predicting
-    vectorizedNotNormalized = vec.transform(feats)
-    vectorized = normalize_data_matrix( vectorizedNotNormalized.toarray() )
+    #vectorizedNotNormalized = vec.transform(feats)
+    vectorized = vec.transform(feats)
+    #print 'start norm'
+    #vectorized = csr_matrix( normalize_data_matrix( vectorizedNotNormalized.toarray() ) )
+    #print 'done norm'
+    norm_mat( vectorized , axis=0 , copy=False )
     # predict
     labels = clf.predict(vectorized)
     labels = [ reverse_labels_map[y] for y in labels ]

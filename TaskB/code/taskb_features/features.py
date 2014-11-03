@@ -135,6 +135,7 @@ class FeaturesWrapper:
             features.update(ark_feats)
 
 
+        """
         #add wordnet features     
         wnQueue = Queue.Queue()
         for word in phrase:
@@ -153,7 +154,7 @@ class FeaturesWrapper:
                 else:
                     for synset in queueList:
                         features[('term_wn_node',synset.name)] = 1
-
+        """
 
         # Feature: URL Features
         if enabled_modules['url']:
