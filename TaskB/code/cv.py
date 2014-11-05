@@ -55,6 +55,13 @@ def main():
         default = False
     )
 
+    parser.add_argument("-r",
+        dest = "random",
+        help = "Random shuffling of input data.",
+        type = bool,
+        default = False
+    )
+
 
     # Parse the command line arguments
     args = parser.parse_args()
@@ -94,7 +101,7 @@ def main():
 
     # For each held-out test set
     i = 1
-    for training,testing in cv_partitions(data[:length], num_folds=num_folds):
+    for training,testing in cv_partitions(data[:length], num_folds=num_folds, shuffle=args.random):
 
         # Users like to see progress
         print 'Fold: %d of %d' % (i,num_folds)
