@@ -84,8 +84,8 @@ class Tweet:
         retVal = ''
 
         # Build output
-        retVal +=                 self.SID
-        retVal += '\t' +          self.UID
+        retVal +=                 self.sid
+        retVal += '\t' +          self.uid
         retVal += '\t' +      str(self.begin)
         retVal += '\t' +      str(self.end  )
         retVal += '\t' +          self.label

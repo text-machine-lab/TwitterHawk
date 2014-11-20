@@ -14,6 +14,7 @@ import glob
 import random
 
 from note import Note
+from model import labels_map
 from taska_features.features import FeaturesWrapper
 
 import train
@@ -54,6 +55,13 @@ def main():
         default = False
     )
 
+    parser.add_argument("-r",
+        dest = "random",
+        help = "Random shuffling of input data.",
+        action = 'store_true',
+        default = False
+    )
+
 
     # Parse the command line arguments
     args = parser.parse_args()
@@ -76,54 +84,79 @@ def main():
         note_tmp.read(txt)
         notes.append(note_tmp)
 
+
     # List of all data
-    data = []
+    X = []
+    Y = []
     for n in notes:
-        X = zip(n.getIDs(), n.getTweets())
-        Y = n.getLabels()
-        d = zip(X,Y)
-        data += d
+        X += zip(n.getIDs(), n.getTweets())
+        Y += n.getLabels()
 
 
-    # Hacky way to average all predictions together
-    # FIXME 
-    #     Currently: collects every predicted label and evaluates all at once
-    #     Should:    1. compute confusion matrix for each round of predictions
-    #                2. Average confusion matrix (by storing running sum matrix)
-    #                3. Display averaged matrix
-    gold = []
-    pred = []
+    # Build confusion matrix
+    confusion = [ [0 for i in labels_map] for j in labels_map ]
 
+    # Instantiate feat obj once (it'd really slow down CV to rebuild every time)
     feat_obj = FeaturesWrapper()
 
     # For each held-out test set
-    i = 1
-    for training,testing in cv_partitions(data[:length], num_folds=num_folds):
+    if args.grid:
 
-        # Users like to see progress
-        print 'Fold: %d of %d' % (i,num_folds)
-        i += 1
+        data = zip(X,Y)
+
+        # Parition data
+        pivot = int(.75 * len(data[:length]))
+        training = data[:pivot ]
+        testing  = data[ pivot:]
 
         # Train on non-heldout data
-        X_train = [ d[0] for d in training ]
-        Y_train = [ d[1] for d in training ]
-        vec,clf= train.train(X_train, Y_train, model_path=None, grid=False, feat_obj=feat_obj)
+        X_train = [ (d[0],d[1]) for d in training ]
+        Y_train = [  d[2]       for d in training ]
+        vec,clf = train.train(X_train, Y_train, model_path=None, grid=args.grid, feat_obj=feat_obj)
 
         # Predict on held out
-        X_test = [ d[0] for d in testing ]
-        Y_test = [ d[1] for d in testing ]
+        X_test = [ (d[0],d[1]) for d in testing ]
+        Y_test = [  d[2]       for d in testing ]
         labels = predict.predict(X_test, clf, vec, feat_obj=feat_obj)
 
-        # Evaluate everything at once (hacky)
-        gold += Y_test
-        pred += labels
-
+        # Compute confusion matrix for held_out data
+        testing_confusion = evaluate.create_confusion(Y_test, labels)
+        confusion = add_matrix(confusion, testing_confusion)
 
         # Evaluate
-        #evaluate.evaluate(labels, Y_test)
+        evaluate.display_confusion(confusion)
 
-    # Evaluate
-    evaluate.evaluate(gold, pred)
+    else:
+
+        # Extract features once
+        feats = train.extract_features(X, feat_obj)
+        data = zip(feats,Y)[:length]
+
+        print len(data)
+
+        i = 1
+        for training,testing in cv_partitions(data,num_folds=num_folds,shuffle=args.random):
+
+            # Users like to see progress
+            print 'Fold: %d of %d' % (i,num_folds)
+            i += 1
+
+            # Train on non-heldout data
+            X_train = [ d[0] for d in training ]
+            Y_train = [ d[1] for d in training ]
+            vec,clf= train.train_vectorized(X_train, Y_train, model_path=None, grid=False)
+
+            # Predict on held out
+            X_test = [ d[0] for d in testing ]
+            Y_test = [ d[1] for d in testing ]
+            labels = predict.predict_vectorized(X_test, clf, vec)
+
+            # Compute confusion matrix for held_out data
+            testing_confusion = evaluate.create_confusion(Y_test, labels)
+            confusion = add_matrix(confusion, testing_confusion)
+
+        # Evaluate
+        evaluate.display_confusion(confusion)
 
 
 
@@ -167,6 +200,32 @@ def cv_partitions( data, num_folds=10, shuffle=True ):
         rest    = [ d   for lst     in folds[:i]+folds[i+1:] for d in lst]
 
         yield (rest, heldout)
+
+
+
+def add_matrix(A, B):
+
+    """
+    add_matrix()
+
+    Purpose: Element-wise sum of two matrices.
+    """
+
+    if len(A) != len(B):
+        raise Exception('Cannot add matrics of different dimensions')
+
+    # Return value
+    C = []
+
+    for a,b in zip(A,B):
+
+        if len(a) != len(b):
+            raise Exception('Cannot add matrics of different dimensions')
+
+        c = [ a_it+b_it for a_it,b_it in zip(a,b) ]
+        C.append(c)
+
+    return C
 
 
 

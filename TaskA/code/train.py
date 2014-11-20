@@ -14,6 +14,7 @@ import cPickle as pickle
 
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 import numpy as np
 from sklearn import svm
 from sklearn.cross_validation import StratifiedKFold
@@ -56,6 +57,7 @@ def main():
         dest = "grid",
         help = "Perform Grid Search",
         type = bool,
+        #default = True
         default = False
     )
 
@@ -114,27 +116,39 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
                            vec is the feature vectorizer
     """
 
+    # Vectorize data
+    X = extract_features(X, feat_obj)
+
+    # Train model
+    return train_vectorized(X, Y, model_path, grid)
+
+
+
+def extract_features(X, feat_obj=None):
     # Data -> features
     if feat_obj == None: feat_obj = FeaturesWrapper()
-    feats    = feat_obj.extract_features(X)
+    return feat_obj.extract_features(X)
 
+
+def train_vectorized(X, Y, model_path=None, grid=False):
+
+    # Vectorize labels
     labels = [ labels_map[y] for y in Y ]
     Y = np.array(  labels  )
 
-
     # Vectorize feature dictionary
     vec = DictVectorizer()
-    X = vec.fit_transform(feats)
-
+    X = vec.fit_transform(X)
 
     # Grid Search?
     if grid:
         print 'Performing Grid Search'
         clf = do_grid_search(X, Y)
     else:
+        #clf = LogisticRegression(C=1000.0)
         clf = LinearSVC(C=0.1)
+        #clf = svm.SVC(C=0.1, gamma=10.0)
         clf.fit(X, Y)
-
 
     # Save model
     if model_path:
@@ -144,7 +158,6 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
         with open(model_path+'.model', 'wb') as f:
             pickle.dump(clf, f)
 
-
     # return model
     return vec, clf
 
@@ -152,12 +165,42 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
 
 def do_grid_search(X, Y):
 
-    # Search space
-    C_range = 10.0 ** np.arange(-2, 9)
-    param_grid = dict(C=C_range)
+    algorithm = 'linear_svm'
+    #algorithm = 'maxent'
+    #algorithm = 'rbf_svm'
+
+    # Type of classifier
+    if (algorithm == 'linear_svm'):
+        print 'LINEAR_SVM'
+        clf = svm.LinearSVC()
+
+        # Search space
+        C_range = 10.0 ** np.arange(-3, 2)   # best is 0.1
+        param_grid = dict(C=C_range)
+
+    elif (algorithm == 'maxent'):
+        print 'MAXENT'
+        clf = LogisticRegression()
+
+        # Search space
+        C_range = 10.0 ** np.arange(-3, 2)   # best is 1.0
+        param_grid = dict(C=C_range)
+
+    elif (algorithm == 'rbf_svm'):
+        print 'RBF_SVM'
+        clf = svm.SVC()
+
+        # Search space
+        C_range = 10.0 ** np.arange(-3, 2)              # best is  10.0
+        gamma_range = 10.0 ** np.arange( -3 , 2 )       # best is  0.01
+        param_grid = dict(C=C_range, gamma=gamma_range)
+
+
+    # Cross validation folds
     cv = StratifiedKFold(y=Y, n_folds=10)
 
-    grid = GridSearchCV(svm.LinearSVC(),
+    # Grid Search
+    grid = GridSearchCV(clf,
                         param_grid=param_grid,
                         cv=cv,
                         score_func=f1_score)
@@ -165,7 +208,10 @@ def do_grid_search(X, Y):
     # Search
     grid.fit(X, Y)
 
+    print
     print "The best classifier is: ", grid.best_estimator_
+    print
+    print vars(grid.best_estimator_)
     return grid.best_estimator_
 
 

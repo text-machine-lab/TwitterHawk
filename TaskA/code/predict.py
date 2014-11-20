@@ -61,27 +61,42 @@ def main():
         print 'no predicting files :('
         exit(1)
 
-
-    # Load model
-    with open(model_path+'.model', 'rb') as fid:
-        clf = pickle.load(fid)
-    with open(model_path+'.dict', 'rb') as fid:
-        vec = pickle.load(fid)
-
-
-    # Predict labels for each file
-    feat_obj = FeaturesWrapper()
-    for pfile in txt_files:
+    # Predict
+    for txt_file in txt_files:
         note = Note()
-        note.read(pfile)
-        X = note.getTweets()
+        note.read(txt_file)
+        X = zip(note.getIDs(),note.getTweets())
 
-        # Predict
-        labels = predict( X, clf, vec, feat_obj=feat_obj )
+        labels = predict_using_model(txt_files, model_path, out_dir)
 
         # output predictions
-        outfile  = os.path.join(out_dir, os.path.basename(pfile))
+        outfile  = os.path.join(out_dir, os.path.basename(txt_file))
         note.write( outfile, labels )
+
+
+
+# Global variables (in case outside module repeatedly queries predict_using_model
+clf = None
+vec = None
+feat_obj = None
+
+def predict_using_model(X, model_path, out_dir):
+
+    global clf,vec, feat_obj
+
+    # Load model
+    if clf == None:
+        with open(model_path+'.model', 'rb') as fid:
+            clf = pickle.load(fid)
+    if vec == None:
+        with open(model_path+'.dict', 'rb') as fid:
+            vec = pickle.load(fid)
+    if feat_obj == None:
+        feat_obj = FeaturesWrapper()
+
+    # Predict
+    labels = predict( X, clf, vec, feat_obj=feat_obj )
+    return labels
 
 
 
@@ -96,9 +111,14 @@ def predict( X, clf, vec, feat_obj=None ):
     if feat_obj == None: feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
 
+    # predict
+    return predict_vectorized(feats, clf, vec)
+
+
+
+def predict_vectorized(X, clf, vec):
     # Vectorize feature dictionary
-    # NOTE: do not fit() during predicting
-    vectorized = vec.transform(feats)
+    vectorized = vec.transform(X)
 
     # predict
     labels = clf.predict(vectorized)

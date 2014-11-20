@@ -59,6 +59,16 @@ def evaluate(pred_labels, gold_labels, out=sys.stdout):
     Purpose: Useful for cross validation analysis
     """
 
+    # Compute confusion matrix
+    confusion = create_confusion(pred_labels, gold_labels)
+
+    # Display confusion matrix
+    display_confusion(confusion, out)
+
+
+
+def create_confusion(pred_labels, gold_labels):
+
     # Compute the confusion matrix
     labels = model.labels_map   # hash tabble: label -> index
     confusion = [[0] * len(labels) for e in labels]
@@ -66,6 +76,14 @@ def evaluate(pred_labels, gold_labels, out=sys.stdout):
     # Get corresponding concept labels (prediction vs. actual)
     for p,g in zip( pred_labels, gold_labels ):
         confusion[labels[p]][labels[g]] += 1
+
+    return confusion
+
+
+
+def display_confusion(confusion, out=sys.stdout):
+
+    labels = model.labels_map   # hash tabble: label -> index
 
     # Display the confusion matrix
     print >>out, ""
@@ -81,6 +99,8 @@ def evaluate(pred_labels, gold_labels, out=sys.stdout):
     for act, act_v in labels.items():
         print >>out, "%10s %10s" % (act.rjust(pad), "\t\t\t".join([str(confusion[act_v][pre_v]) for pre, pre_v in labels.items()]))
     print >>out, ""
+
+
 
     # Compute the analysis stuff
     precision = []
@@ -113,7 +133,9 @@ def evaluate(pred_labels, gold_labels, out=sys.stdout):
 
     print >>out, "--------\n"
 
+
     print >>out, 'Macro-averaged pos/neg F-score: ', (f1[0] + f1[2]) / 2
+
 
 
 
