@@ -11,12 +11,10 @@ import glob
 import argparse
 import cPickle as pickle
 
-"""
 import sys
 sys.path.append(os.getenv('BISCUIT_DIR'))
 from common_lib.common_features.utilities import normalize_data_matrix
 from scipy.sparse import csr_matrix
-"""
 from sklearn.preprocessing import normalize as norm_mat
 
 from taskb_features.features import FeaturesWrapper
@@ -78,7 +76,8 @@ def main():
         note = Note()
         note.read(pfile)
         XNotNormalized = zip(note.sid_list(), note.text_list())
-        X = normalize_data_matrix(XNotNormalized)
+        X = XNotNormalized
+        #X = normalize_data_matrix(XNotNormalized)
 
         # Predict
         labels = predict( X, clf, vec )

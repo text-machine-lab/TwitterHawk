@@ -154,8 +154,8 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
         print 'Performing Grid Search'
         clf = do_grid_search(X, Y)
     else:
-        clf = LinearSVC(C=0.1)
-        #clf = LogisticRegression(C=1)
+        #clf = LinearSVC(C=0.1)
+        clf = LogisticRegression(C=1)
         clf.fit(X, Y)
 
 
@@ -175,12 +175,42 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
 
 def do_grid_search(X, Y):
 
-    # Search space
-    C_range = 10.0 ** np.arange(-2, 9)
-    param_grid = dict(C=C_range)
+    #algorithm = 'linear_svm'
+    #algorithm = 'maxent'
+    algorithm = 'rbf_svm'
+
+    # Type of classifier
+    if (algorithm == 'linear_svm'):
+        print 'LINEAR_SVM'
+        clf = svm.LinearSVC()
+
+        # Search space
+        C_range = 10.0 ** np.arange(-3, 2)   # best is 0.1
+        param_grid = dict(C=C_range)
+
+    elif (algorithm == 'maxent'):
+        print 'MAXENT'
+        clf = LogisticRegression()
+
+        # Search space
+        C_range = 10.0 ** np.arange(-3, 2)   # best is 1.0
+        param_grid = dict(C=C_range)
+
+    elif (algorithm == 'rbf_svm'):
+        print 'RBF_SVM'
+        clf = svm.SVC()
+
+        # Search space
+        C_range = 10.0 ** np.arange(-3, 2)              # best is
+        gamma_range = 10.0 ** np.arange( -3 , 2 )       # best is
+        param_grid = dict(C=C_range, gamma=gamma_range)
+
+
+    # Cross validation folds
     cv = StratifiedKFold(y=Y, n_folds=10)
 
-    grid = GridSearchCV(svm.LinearSVC(),
+    # Grid Search
+    grid = GridSearchCV(clf,
                         param_grid=param_grid,
                         cv=cv,
                         score_func=f1_score)
@@ -188,6 +218,7 @@ def do_grid_search(X, Y):
     # Search
     grid.fit(X, Y)
 
+    print
     print "The best classifier is: ", grid.best_estimator_
     return grid.best_estimator_
 
