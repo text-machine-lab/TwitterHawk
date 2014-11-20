@@ -44,14 +44,20 @@ class ArkTweetNLP:
         self.resolve(data)
 
 
+    def normalizeKey(self, tweet):
+        clean = lambda txt: self.h.unescape(txt).strip()
+        return clean(clean(tweet))
+
+
     def resolve(self, data):
 
         #print 'resolve length: ', len(data)
 
-        data = [self.h.unescape(twt).strip() for twt in set(data)]
+        data = [self.normalizeKey(twt) for twt in set(data)]
 
         # Tag all uncached data
         uncached = [ twt for twt in data if not self.cache.has_key(twt) ]
+        #uncached = data
 
         #print uncached
         #print 'len     : ', len(uncached)
@@ -60,9 +66,9 @@ class ArkTweetNLP:
         #print '\n\n\n'
 
         if uncached:
-            #print 'uncached: ', uncached
+            print 'uncached: ', uncached
             partial = CMUTweetTagger.runtagger_parse(uncached)
-            #print 'partial: ', partial
+            print 'partial: ', partial
             for twt,tag in zip(uncached,partial):
                 self.cache.add_map(twt, tag)
 
@@ -95,11 +101,12 @@ class ArkTweetNLP:
         @param data. A list of strings (each string is the text of a tweet)
         """
         self.resolve(data)
+        #exit()
 
 
 
     def tokens(self, txt):
-        key = self.h.unescape(txt).strip()
+        key = self.normalizeKey(txt)
         return self._toks[key]
 
 
@@ -119,7 +126,7 @@ class ArkTweetNLP:
         feats = {}
 
         # Escape text if not already done
-        twt = self.h.unescape(twt).strip()
+        twt = self.normalizeKey(twt)
 
         # Feature: POS counts
         pos_counts = defaultdict(lambda:0)        
@@ -130,8 +137,8 @@ class ArkTweetNLP:
             featname = 'pos_count-%s' % pos
             feats[featname] = count
 
-        #print 'ARK: ', twt
-        #print '\t', feats
+        print 'ARK: ', twt
+        print '\t', feats
 
         return feats
 

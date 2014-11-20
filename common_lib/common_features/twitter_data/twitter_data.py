@@ -71,6 +71,38 @@ class TwitterData:
 
 
 
+    def lookup(self, sids):
+
+        """
+        resolve()
+
+        Purpose: Wrapper for interface_twitter.resolve() (to use object's cache)
+
+        @param sids.  A list of twiiter IDs.
+        @return       A list of tweets.
+        """
+
+        # Compile list of tweets that need to be quieried with API
+        uncached = [  sid  for  sid  in  sids  if not self.cache.has_key(sid)  ]
+
+        #print 'uncached: ', len(uncached)
+
+        # Use API to lookup uncached tweets
+        if uncached:
+            partial = interface_twitter.resolve(uncached)
+            for sid,twt in zip(uncached,partial):
+                self.cache.add_map(sid,twt)
+
+        # Get all tweets
+        resolved = []
+        for sid in sids:
+            twt = self.cache.get_map(sid)
+            resolved.append(twt)
+
+        return resolved
+
+
+
     def features(self, sid):
 
         """

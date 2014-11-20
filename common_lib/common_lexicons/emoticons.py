@@ -106,6 +106,7 @@ else:
 
     # Build dictionary of emoticons
     base_dir = enabled_modules['lexicons']
+    base_dir = '/data1/nlp-data/twitter/data/lexicons/'
     if base_dir:
         filename = os.path.join(base_dir, 'emoticons.txt')
         if os.path.exists(filename):

@@ -12,9 +12,7 @@ import re
 import string
 import nltk.stem
 import numpy as np
-
-from BeautifulSoup import BeautifulSoup
-from HTMLParser    import HTMLParser
+from HTMLParser import HTMLParser
 
 
 # Add common-lib code to system path
@@ -32,7 +30,7 @@ neg_words  = frozenset(['no', 'not', 'none', 'nobody', 'nothing',
 # Stop words
 stop_words = frozenset( ["a"   , "an"   , "and"  , "are"  , "as"  , "at"   ,
                          "be"  , "but"  , "by"   , "for"  , "if"  , "in"   ,
-                         "into", "is"   , "it"   , "no"   , "not" , "of"   ,
+                         "into", "is"   , "it"   ,                  "of"   ,
                          "on"  , "or"   , "such" , "that" , "the" , "their",
                          "then", "there", "these", "they" , "this", "to"   ,
                          "was" , "will" , "with"                           ] )
@@ -41,7 +39,8 @@ stop_words = frozenset( ["a"   , "an"   , "and"  , "are"  , "as"  , "at"   ,
 # Stemmer for words
 st = nltk.stem.SnowballStemmer('english')
 
-# Cleaning up text
+
+# Cleaning up text if ark_tweet not available
 h = HTMLParser()
 
 
@@ -50,10 +49,6 @@ taska_tokenizations = []
 
 
 def tokenize(text, ark_tweet=None):
-
-    # FIXME - Save original token indices/alignment, send to tokenizer, re-align better tokens
-    #         with training data tokens
-
 
     # Use twitter_nlp tokenzier, if available
     if ark_tweet:
@@ -66,67 +61,83 @@ def tokenize(text, ark_tweet=None):
 # Slightly different for TaskA vs. TaskB
 def normalize_phrase_TaskA(sentence, ark_tweet=None, stem=False):
 
-    # Preserve old indices
-    indices = []
-    curr = 0
-    for w in sentence:
-        indices.append(curr)
-        curr += len(w) + 1
-
-
     # Form full string of text
-    text = h.unescape( ' '.join(sentence) )
+    if ark_tweet:
+        text = ark_tweet.normalizeKey( ' '.join(sentence) )
+    else:
+        clean = lambda txt: h.unescape(txt).strip()
+        text = clean(clean(' '.join(sentence)))
 
 
-    # Recover original tokens from text
+    # Save character index that each token ends at
+    text = text.replace('\n', ' ').replace('\t', ' ')
+    curr = len(text.split(' ')[0])
+    indices = [curr]
+    for w in text.split(' ')[1:]:
+        curr += len(w) + 1
+        indices.append(curr)
+
+
+    '''
+    # Test that indices are correct: recover original tokens from text
     start = 0
     reconstructed = []
     for ind in indices[1:]:
-        #print 'start/end: ', start, ind
-        #print '\t~~~' + text[start:ind-1] + '~~~'
+        print 'start/end: ', start, ind
+        print '\t~~~' + text[start:ind-1] + '~~~'
         reconstructed.append(text[start:ind-1])
         start = ind
     reconstructed.append(text[start:])
+    '''
 
     # Tokenize
     toks = tokenize(text, ark_tweet)
 
-    print toks
+
+    #print 'sent: ', sentence
+    #print
+    #print 'text: ', text
+    #print
+    #print 'indices: ', indices
+    #print
+    #print 'toks: ', toks
+    #print
+
 
     detoks = []
-    ind = 0
-    text_start = 0
     aggregate = []
-    tmp_text = text
+    ind = 0
+    curr = 0
     for tok in toks:
 
-        ind += len(tok)
+        #print '\t', tok
+        #print curr
+        #print indices[ind]
+
+
+        # empty token
+        while curr == indices[ind]:
+            #print '$$   ', indices[ind]
+            detoks.append([''])
+            ind += 1
+            curr += 1
+            
+
+        curr += len(tok)
+
         aggregate.append(tok)
 
-        # concat of aggregate tokens compromises all chars before 1st space?
-        if ind >= tmp_text.find(' '):
+        if curr == indices[ind]:
+            #print '---'
             detoks.append(aggregate)
             aggregate = []
+            ind += 1
+            curr += 1
 
-            # Reset counters
-            ind = 0
-            tmp_text = tmp_text[tmp_text.find(' ')+1:]
-
-            
-    '''
-    print 'normalizing: ', sentence
-    print
-    print 'text: ', text
-    print
-    print 'indices: ', indices
-    print
-    print 'toks: ', toks
-    print
-    print 'detoks: ', detoks
-    print
-    print 'reconstructed: ', reconstructed
-    print '\n\n'
-    '''
+    #print 'detoks: ', detoks
+    #print
+    #print 'reconstructed: ', reconstructed
+    #print '\n\n'
 
     return normalize_phrase(detoks, stem)
 
@@ -155,6 +166,9 @@ def normalize_phrase(phrase, stem=False):
     """
 
     retVal = []
+
+    #print '\n\n\n'
+    #print 'phrase: ', phrase
 
     negated = False
     for words in phrase:
@@ -187,8 +201,13 @@ def normalize_phrase(phrase, stem=False):
             # Punctuation
             elif all( [ (c in string.punctuation) for c in word ] ):
                 negated = False
-                #tok = [word]
-                tok = []
+                # All exlamation marks?
+                if   re.search('!+',word):
+                    tok = ['!']
+                elif re.search('\\?+',word):
+                    tok = ['?']
+                else:
+                    tok = []
 
             # User mention
             elif word[0] == '@':
@@ -225,6 +244,9 @@ def normalize_phrase(phrase, stem=False):
 
         # Append list of tokens (and retain original indices)
         retVal.append(toks)
+
+    #print
+    #print retVal
 
     return retVal
 
@@ -335,6 +357,7 @@ def is_elongated_punctuation(word):
 
 
 def normalize_data_matrix(X):
+    print X
     meanVector = np.mean(X, axis=0)
     stdVector = np.std(X, axis=0)
     for i,comp in enumerate(stdVector):
