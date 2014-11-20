@@ -110,6 +110,9 @@ class ArkTweetNLP:
         return self._toks[key]
 
 
+    def posTags(self, txt):
+        key = self.h.unescape(txt).strip()
+        return self._pos[key]
 
     def features(self, twt):
 

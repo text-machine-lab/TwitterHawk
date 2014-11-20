@@ -31,7 +31,7 @@ from sklearn.metrics import f1_score
 from sklearn.preprocessing import normalize as norm_mat
 
 from sklearn.linear_model import LogisticRegression
-
+from sklearn.linear_model import SGDClassifier
 """
 import sys
 sys.path.append(os.getenv('BISCUIT_DIR'))
@@ -148,14 +148,15 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
     #X = csr_matrix( normalize_data_matrix(XNotNormalized.toarray()) )
     #print 'done norm'
     norm_mat( X , axis=0 , copy=False)
-    """once normalized, use sparse.csr_matrix(A) to convert back to sparse?"""
+
     # Grid Search
     if grid:
         print 'Performing Grid Search'
         clf = do_grid_search(X, Y)
     else:
         #clf = LinearSVC(C=0.1)
-        clf = LogisticRegression(C=1)
+        #clf = LogisticRegression(C=0.1)
+        clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
         clf.fit(X, Y)
 
 

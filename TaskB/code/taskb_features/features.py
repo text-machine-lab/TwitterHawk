@@ -13,8 +13,8 @@ from copy import copy
 
 import note
 
-from nltk.corpus import wordnet as wn   
-import Queue
+#from nltk.corpus import wordnet as wn   
+#import Queue
 
 
 from taskb_lexicon_features import lexicon_features
@@ -31,7 +31,7 @@ from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
 from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
-
+from common_lib.common_features.ukb          import ukb_wsd
 
 
 class FeaturesWrapper:
@@ -51,6 +51,8 @@ class FeaturesWrapper:
         # Get HTML data from URLs in tweets
         if enabled_modules['url']:
             self.url = url.Url()
+
+        self.ukb = ukb_wsd.ukbWSD()
 
 
 
@@ -120,7 +122,7 @@ class FeaturesWrapper:
             features.update(tdata_feats)
 
 
-        return features
+        
 
 
         # Feature: Lexicon Features
@@ -139,7 +141,7 @@ class FeaturesWrapper:
         #add wordnet features     
         wnQueue = Queue.Queue()
         for word in phrase:
-            parentNumber = 1
+            parentNumber = 0
             synsetList = wn.synsets(word)
             wnQueue.put(synsetList)
             while wnQueue.empty() == False:
@@ -183,6 +185,23 @@ class FeaturesWrapper:
 
         # Result: Slightly better
         features['phrase_length'] = len(phrase) / 4
+
+        #add ukb wsd features
+        if self.ukb.cache.has_key( tweet ):
+            wordSenses = self.ukb.cache.get_map( tweet )
+        else:
+            #print tweet
+            wordSenses = self.ukb.ukb_wsd( phrase , self.ark_tweet.posTags( tweet ) )
+            self.ukb.cache.add_map( tweet , wordSenses )
+            
+        for ws in wordSenses:
+            for s in ws:
+                if ('wsd',s[0]) in features.keys():
+                    features[('wsd',s[0])] += s[1]
+                else:
+                    features[('wsd',s[0])] = s[1]
+
+            
 
 
         '''

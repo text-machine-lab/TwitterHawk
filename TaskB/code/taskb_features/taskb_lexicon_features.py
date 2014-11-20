@@ -205,7 +205,7 @@ def brown_cluster_features(phrase):
 def general_inquirer_features(phrase):
 
     features = {}
-
+    tagDict = defaultdict( lambda:0 )
     #Add General Inquirer Features
     lastTags = None
     #tagDict = lexInq.getBlankDict()
@@ -312,7 +312,7 @@ def lexicon_features(phrase):
     features.update(   opinion_lexicon_features(phrase)                  )
     features.update( sentiment_lexicon_features(phrase,  'HTS', lexHTS ) )
     features.update( sentiment_lexicon_features(phrase, 'S140', lexS140) )
-    features.update(   emotion_lexicon_features(phrase)                  )
+    #features.update(   emotion_lexicon_features(phrase)                  )
     features.update(     brown_cluster_features(phrase)                  )
 
 
@@ -322,7 +322,7 @@ def lexicon_features(phrase):
     # Apply all general-purpose lexicons
     features.update( subjectivity_lexicon_features(phrase)                  )
     features.update(        affin_lexicon_features(phrase)                  )
-    features.update(  general_inquirer_features(phrase)                  )
+    #features.update(  general_inquirer_features(phrase)                  )
 
     #if features:
     #    print features
