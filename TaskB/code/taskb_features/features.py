@@ -186,20 +186,21 @@ class FeaturesWrapper:
         # Result: Slightly better
         features['phrase_length'] = len(phrase) / 4
 
-        #add ukb wsd features
-        if self.ukb.cache.has_key( tweet ):
-            wordSenses = self.ukb.cache.get_map( tweet )
-        else:
-            #print tweet
-            wordSenses = self.ukb.ukb_wsd( phrase , self.ark_tweet.posTags( tweet ) )
-            self.ukb.cache.add_map( tweet , wordSenses )
-            
-        for ws in wordSenses:
-            for s in ws:
-                if ('wsd',s[0]) in features.keys():
-                    features[('wsd',s[0])] += s[1]
-                else:
-                    features[('wsd',s[0])] = s[1]
+        if enabled_modules['ark_tweet']:
+            #add ukb wsd features
+            if self.ukb.cache.has_key( tweet ):
+                wordSenses = self.ukb.cache.get_map( tweet )
+            else:
+                #print tweet
+                wordSenses = self.ukb.ukb_wsd( phrase , self.ark_tweet.posTags( tweet ) )
+                self.ukb.cache.add_map( tweet , wordSenses )
+                
+            for ws in wordSenses:
+                for s in ws:
+                    if ('wsd',s[0]) in features.keys():
+                        features[('wsd',s[0])] += s[1]
+                    else:
+                        features[('wsd',s[0])] = s[1]
 
             
 

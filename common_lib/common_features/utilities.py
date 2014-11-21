@@ -235,7 +235,11 @@ def normalize_phrase(phrase, stem=False):
                     tok = []
                 else:
                     if stem:
-                        word = word.decode('ascii','ignore')
+                        try:
+                            word = word.decode('ascii','ignore')
+                        except UnicodeEncodeError:
+                            #print 'decode error'
+                            pass
                         word = st.stem(word)
                     if negated: word = word + '_neg'
                     tok = [word]
