@@ -105,6 +105,14 @@ def main():
 
 
 
+def extract_features(X, feat_obj=None):
+    # Data -> features
+    if feat_obj == None:
+        feat_obj = FeaturesWrapper()
+    feats  = feat_obj.extract_features(X)
+    return feats
+
+
 
 def train(X, Y, model_path=None, grid=False, feat_obj=None):
 
@@ -125,13 +133,18 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
 
 
     # Data -> features
-    if feat_obj == None: 
-        feat_obj = FeaturesWrapper()
-    feats  = feat_obj.extract_features(X)
+    feats  = extract_features(X, feat_obj=feat_obj)
 
+    # Train
+    return train_vectorized(X, labels, grid=grid)
+
+
+
+def train_vectorized(feats, Y, model_path=None, grid=False):
+
+    # Vectorize labels
     labels = [ labels_map[y] for y in Y ]
     Y = np.array( labels )
-
 
     # Vectorize feature dictionary
     # NOTE: import to fit() during training

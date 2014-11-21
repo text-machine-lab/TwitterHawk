@@ -48,12 +48,6 @@ def main():
         default = 10
     )
 
-    parser.add_argument("-g",
-        dest = "grid",
-        help = "Perform Grid Search",
-        action = "store_true"
-    )
-
     parser.add_argument("-r",
         dest = "random",
         help = "Random shuffling of input data.",
@@ -84,71 +78,56 @@ def main():
         notes.append(note_tmp)
 
     # List of all data
-    data = []
+    X = []
+    Y = []
     for n in notes:
-        d = [ it for it in zip(n.sid_list(), n.text_list(), n.label_list()) ]
-        data += d
+        # Data points
+        x = [ it for it in zip(n.sid_list(), n.text_list()) ]
+        X += x
 
+        # Labels
+        y = [ it for it in n.label_list() ]
+        Y += y
+
+    # Limit length
+    X = X[:length]
+    Y = Y[:length]
 
     # Build confusion matrix
     confusion = [ [0 for i in labels_map] for j in labels_map ]
 
-
     # Instantiate feat obj once (it'd really slow down CV to rebuild every time)
     feat_obj = FeaturesWrapper()
 
+    # Extract features once
+    feats = train.extract_features(X, feat_obj)
+    data = zip(feats,Y)
 
-    # Do EITHER eval or grid search
-    if args.grid:
+    # For each held-out test set
+    i = 1
+    for training,testing in cv_partitions(data[:length], num_folds=num_folds, shuffle=args.random):
 
-        # Parition data
-        pivot = int(.75 * len(data))
-        training = data[:pivot ]
-        testing  = data[ pivot:]
+        # Users like to see progress
+        print 'Fold: %d of %d' % (i,num_folds)
+        i += 1
 
         # Train on non-heldout data
-        X_train = [ (d[0],d[1]) for d in training ]
-        Y_train = [  d[2]       for d in training ]
-        vec,clf = train.train(X_train, Y_train, model_path=None, grid=args.grid, feat_obj=feat_obj)
+        X_train = [ d[0] for d in training ]
+        Y_train = [ d[1] for d in training ]
+        vec,clf = train.train_vectorized(X_train, Y_train, model_path=None, grid=False)
 
         # Predict on held out
-        X_test = [ (d[0],d[1]) for d in testing ]
-        Y_test = [  d[2]       for d in testing ]
-        labels = predict.predict(X_test, clf, vec, feat_obj=feat_obj)
+        X_test = [ d[0] for d in testing ]
+        Y_test = [ d[1] for d in testing ]
+        labels = predict.predict_vectorized(X_test, clf, vec)
 
         # Compute confusion matrix for held_out data
         testing_confusion = evaluate.create_confusion(Y_test, labels)
         confusion = add_matrix(confusion, testing_confusion)
 
-        # Evaluate
-        evaluate.display_confusion(confusion)
 
-    else:
-        # For each held-out test set
-        i = 1
-        for training,testing in cv_partitions(data[:length], num_folds=num_folds, shuffle=args.random):
-
-            # Users like to see progress
-            print 'Fold: %d of %d' % (i,num_folds)
-            i += 1
-
-            # Train on non-heldout data
-            X_train = [ (d[0],d[1]) for d in training ]
-            Y_train = [  d[2]       for d in training ]
-            vec,clf = train.train(X_train, Y_train, model_path=None, grid=args.grid, feat_obj=feat_obj)
-
-            # Predict on held out
-            X_test = [ (d[0],d[1]) for d in testing ]
-            Y_test = [  d[2]       for d in testing ]
-            labels = predict.predict(X_test, clf, vec, feat_obj=feat_obj)
-
-            # Compute confusion matrix for held_out data
-            testing_confusion = evaluate.create_confusion(Y_test, labels)
-            confusion = add_matrix(confusion, testing_confusion)
-
-
-        # Evaluate
-        evaluate.display_confusion(confusion)
+    # Evaluate
+    evaluate.display_confusion(confusion)
 
 
 

@@ -100,6 +100,12 @@ def predict(X, clf, vec, feat_obj=None):
         feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
 
+    return predict_vectorized(feats, clf, vec)
+
+
+
+def predict_vectorized(feats, clf, vec):
+
     # Vectorize feature dictionary
     # NOTE: do not fit() during predicting
     #vectorizedNotNormalized = vec.transform(feats)
