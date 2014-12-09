@@ -34,6 +34,8 @@ class Note:
         Purpose: Read the file and store all tweets
         """
 
+        labels = defaultdict(lambda:0)
+
         with open(txt) as f:
             for line in f:
                 # Ignore tweets that are ill-formatted
@@ -41,8 +43,11 @@ class Note:
                     # Add tweet representation to the list
                     twt = Tweet(line)
                     self.tweets.append( twt )
+                    labels[twt.label] += 1
                 except BadTweetException, e:
                     continue
+
+        print '\t\t', dict(labels)
 
 
 

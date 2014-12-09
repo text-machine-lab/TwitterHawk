@@ -136,7 +136,7 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
     feats  = extract_features(X, feat_obj=feat_obj)
 
     # Train
-    return train_vectorized(X, labels, grid=grid)
+    return train_vectorized(feats, Y, model_path=model_path, grid=grid)
 
 
 
@@ -167,9 +167,9 @@ def train_vectorized(feats, Y, model_path=None, grid=False):
         print 'Performing Grid Search'
         clf = do_grid_search(X, Y)
     else:
-        #clf = LinearSVC(C=0.1)
+        clf = LinearSVC(C=0.1)
         #clf = LogisticRegression(C=0.1)
-        clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
+        #clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
         clf.fit(X, Y)
 
 
@@ -189,9 +189,9 @@ def train_vectorized(feats, Y, model_path=None, grid=False):
 
 def do_grid_search(X, Y):
 
-    #algorithm = 'linear_svm'
+    algorithm = 'linear_svm'
     #algorithm = 'maxent'
-    algorithm = 'rbf_svm'
+    #algorithm = 'rbf_svm'
 
     # Type of classifier
     if (algorithm == 'linear_svm'):

@@ -13,8 +13,8 @@ from copy import copy
 
 import note
 
-#from nltk.corpus import wordnet as wn   
-#import Queue
+from nltk.corpus import wordnet as wn   
+import Queue
 
 
 from taskb_lexicon_features import lexicon_features
@@ -52,7 +52,8 @@ class FeaturesWrapper:
         if enabled_modules['url']:
             self.url = url.Url()
 
-        self.ukb = ukb_wsd.ukbWSD()
+        if enabled_modules['ukb_wsd']:
+            self.ukb = ukb_wsd.ukbWSD()
 
 
 
@@ -110,19 +111,16 @@ class FeaturesWrapper:
         phrase = utilities.tokenize(tweet, self.ark_tweet)
 
 
-        # Feature: Stemmed Tokens
-        normalized_stems = utilities.normalize_phrase_TaskB(phrase, stem=True)
-        for word in normalized_stems:
-            features[('stemmed_unigram_tok', word)] = 1
+        # Feature: Unigram Tokens
+        normalized = utilities.normalize_phrase_TaskB(phrase)
+        for word in normalized:
+            features[('unigram_tok', word)] = 1
 
 
         # Feature: twitter_data features
         if enabled_modules['twitter_data']:
             tdata_feats = self.twitter_data.features(sid)
             features.update(tdata_feats)
-
-
-        
 
 
         # Feature: Lexicon Features
@@ -137,7 +135,9 @@ class FeaturesWrapper:
             features.update(ark_feats)
 
 
-        """
+        '''
+        # Literally does nothing. No better, no worse. Nothing. 
+        #   About 100 features for tweet. No contribution.
         #add wordnet features     
         wnQueue = Queue.Queue()
         for word in phrase:
@@ -156,7 +156,8 @@ class FeaturesWrapper:
                 else:
                     for synset in queueList:
                         features[('term_wn_node',synset.name)] = 1
-        """
+        '''
+
 
         # Feature: URL Features
         if enabled_modules['url']:
@@ -169,7 +170,7 @@ class FeaturesWrapper:
 
         # Feature: Split hashtag
         if enabled_modules['hashtag']:
-            hashtags = [ w for w in normalized_stems if len(w) and (w[0]=='#') ]
+            hashtags = [ w for w in normalized if len(w) and (w[0]=='#') ]
             for ht in hashtags:
                 toks = hashtag.split_hashtag(ht)
                 for tok in toks:
@@ -186,7 +187,8 @@ class FeaturesWrapper:
         # Result: Slightly better
         features['phrase_length'] = len(phrase) / 4
 
-        if enabled_modules['ark_tweet']:
+
+        if enabled_modules['ukb_wsd'] and enabled_modules['ark_tweet']:
             #add ukb wsd features
             if self.ukb.cache.has_key( tweet ):
                 wordSenses = self.ukb.cache.get_map( tweet )
@@ -202,10 +204,7 @@ class FeaturesWrapper:
                     else:
                         features[('wsd',s[0])] = s[1]
 
-            
 
-
-        '''
         # Result: Good :)
         # Feature: Contains long word? (boolean)
         long_word_threshold = 8
@@ -215,44 +214,12 @@ class FeaturesWrapper:
                 contains_long_word = True
                 break
         features[ ('contains_long_word',contains_long_word) ] = 1
-        '''
-
-        '''
-        print '\n\n'
-        print phrase
-
-        # Result: Worse (except for 3-grams with .5 weight)
-        # Features: N-grams
-        vals = [2,3,4]
-        #vals = [3]
-        for n in vals:
-            for i in range(len(phrase)-n+1):
-
-                #print '\t', normalized[i:i+n]
-                ngram = phrase
-                ngram = [ w.replace("\\","\\\\") for w in ngram[i:i+n] ]
-                ngram = [ w.replace("'","\\'")   for w in ngram        ]
-                
-                tup = eval( "('" + "', '".join(ngram) + "')" )
-                featname = ( '%d-gram'%n, tup  )
-                features[featname] = .5
-                print
-                print '\t', ngram
-
-                for j in range(1,n-1):
-                    words = copy(ngram)
-                    words[j] = '*'
-                    tup = eval( "('" + "', '".join(words) + "')" )
-                    featname = ( 'noncontiguous-%d-gram'%n, tup  )
-                    features[featname] = 1
-                    print '\t\t', tup
-        '''
 
 
-        '''
-        # Result: Worse
+        # Rating: Doesn't make it worse
         # Feature: Prefixes and Suffixes
         n = [2,3]
+        normalized = utilities.normalize_phrase_TaskB(phrase, stem=False)
         for i,word in enumerate(normalized):
             for j in n:
                 if word[-4:] == '_neg': word = word[:-3]
@@ -262,11 +229,9 @@ class FeaturesWrapper:
 
                 features[ ('prefix',prefix) ] = 1
                 features[ ('suffix',suffix) ] = 1
-        '''
 
 
-        '''
-        # Rating: Not effective for this data, which has virtually no emoticons
+        # Rating: Contributes .02
         # Feature: Emoticon Counts
         elabels = { 'positive':0, 'negative':0, 'neutral':0 }
         for word in phrase:
@@ -276,34 +241,6 @@ class FeaturesWrapper:
         for k,v in elabels.items():
             featname = k + '-emoticon'
             features[featname] = v
-            #print featname, ' - ', v
-        #print ''
-        '''
-
-
-        '''
-        # Not useful
-        # Feature: All Capitalization? (boolean)
-        is_all_capitalization = True
-        for word in phrase:
-            if not word: continue
-            if word[0].islower():
-                is_all_capitalization = False
-                break
-        features[ ('all_capitalization',is_all_capitalization) ] = 1
-        '''
-
-
-        '''
-        # Result: Worse
-        # Feature: Contains elongated long punctuation? (boolean)
-        contains_elongated_punc = False
-        for word in phrase:
-            if utilities.isElongatedPunctuation(word):
-                contains_elongated_punc = True
-                break
-        features[ ('contains_elongated_punc',contains_elongated_punc) ] = 1
-        '''
 
 
         #print '\n\n\n'

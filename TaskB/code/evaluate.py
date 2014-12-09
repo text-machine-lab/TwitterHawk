@@ -44,6 +44,12 @@ def main():
         default = None
     )
 
+    parser.add_argument("-e",
+        help = "Do error analysis",
+        dest = "error",
+        action = 'store_true'
+    )
+
     # Parse command line arguments
     args = parser.parse_args()
 
@@ -76,6 +82,9 @@ def main():
     print files
 
 
+    # Useful for error analysis
+    text = []
+
     # One list of all labels
     pred_labels = []
     gold_labels = []
@@ -96,9 +105,18 @@ def main():
         pred_labels += pnote.label_list()
         gold_labels += gnote.label_list()
 
+        # Collect text for error analysis
+        text += pnote.text_list()
+
 
     # Compute results
     evaluate(pred_labels, gold_labels, out=args.output)
+
+
+    # Error analysis
+    if args.error:
+        print '\n\n\n'
+        error_analysis(text, pred_labels, gold_labels)
 
 
 
@@ -183,6 +201,27 @@ def display_confusion(confusion, out=sys.stdout):
 
     print >>out, 'Macro-averaged pos/neg F-score: ', (f1[0] + f1[2]) / 2
 
+
+
+
+def error_analysis(text_list, pred_labels, gold_labels):
+
+    # False positives and false negatives
+    pos_fp = []
+    pos_fn = []
+    neg_fp = []
+    neg_fn = []
+
+    for text,pred,gold in zip(text_list,pred_labels,gold_labels):
+
+        if pred != gold:
+            print
+            print 'pred: ', pred
+            print 'gold: ', gold
+            print
+            print text
+            print
+            print '-'*80
 
 
 if __name__ == '__main__':
