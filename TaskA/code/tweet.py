@@ -17,6 +17,7 @@ class Tweet:
 
     #labels_list = frozenset( ['positive', 'negative', 'neutral', 'objective'] )
     labels_list = frozenset( ['positive', 'negative', 'neutral'] )
+    #labels_list = frozenset( ['positive', 'negative'] )
 
 
     # Constructor
@@ -65,6 +66,10 @@ class Tweet:
 
         # Treat 'neutral' as 'objective'
         if self.label == 'objective':
+            raise BadTweetException
+
+        # Get rid of bad labels
+        if self.label not in Tweet.labels_list:
             raise BadTweetException
 
         # ensure legal label

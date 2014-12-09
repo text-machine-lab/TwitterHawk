@@ -13,6 +13,7 @@ import os
 from collections import defaultdict
 import string
 import re
+import nltk.stem
 
 
 from taska_lexicon_features import lexicon_features
@@ -28,6 +29,12 @@ from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
 from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
+
+
+
+
+st = nltk.stem.SnowballStemmer('english')
+
 
 
 class FeaturesWrapper:
@@ -102,12 +109,15 @@ class FeaturesWrapper:
         phrase   = sentence[begin:end+1]
 
 
+        print phrase
+        return {}
+
         # Feature Dictionary
         features = {}
 
 
         # Normalize all text (tokenizer, stem, etc)
-        normalized = utilities.normalize_phrase_TaskA(sentence, ark_tweet=self.ark_tweet, stem=True)
+        normalized = utilities.normalize_phrase_TaskA(sentence, ark_tweet=self.ark_tweet)
         flat_normed = [ w for words in normalized for w in words ]
 
 
@@ -120,7 +130,13 @@ class FeaturesWrapper:
         # Term unigrams
         for tok in normalized[begin:end+1]:
             for word in tok:
-                features[('term_unigram', word)] = 1
+                if word[-4:] == '_neg':
+                    stemmed = st.stem(word[:-4]) + '_neg'
+                else:
+                    stemmed = st.stem(word)
+                features[('term_unigram', word )] = 1
+                features[('stemmed_term_unigram', stemmed)] = 1
+
 
         # Feature: Unigram context
         # Leading
@@ -135,9 +151,9 @@ class FeaturesWrapper:
 
         # Feature: Lexicon Features
         if enabled_modules['lexicons']:
-            print '\n\n\n'
-            print 'LEX FEATS: ', sentence
-            print begin, end
+            #print '\n\n\n'
+            #print 'LEX FEATS: ', sentence
+            #print begin, end
             # Phrase in question
             lex_feats = lexicon_features(sentence,begin,end+1,ark_tweet=self.ark_tweet)
             features.update(lex_feats)
@@ -148,12 +164,12 @@ class FeaturesWrapper:
             features.update(prev_lex_feats)
 
             # Trailing context
-            #next_lex_feats = lexicon_features(sentence,end+1,end+1+window, ark_tweet=self.ark_tweet)
-            #next_lex_feats = {('next-'+k[0],k[1]):v for k,v in next_lex_feats.items()}
-            #features.update(next_lex_feats)
+            next_lex_feats = lexicon_features(sentence,end+1,end+1+window, ark_tweet=self.ark_tweet)
+            next_lex_feats = {('next-'+k[0],k[1]):v for k,v in next_lex_feats.items()}
+            features.update(next_lex_feats)
 
-            print lex_feats
-            print prev_lex_feats
+            #print lex_feats
+            #print prev_lex_feats
             #print next_lex_feats
 
 

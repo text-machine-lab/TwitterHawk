@@ -20,6 +20,7 @@ from sklearn import svm
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import f1_score
+from sklearn.linear_model import SGDClassifier
 
 from taska_features.features import FeaturesWrapper
 
@@ -44,7 +45,8 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        default = os.path.join(BASE_DIR, 'data/train-cleansed-A.txt')
+        #default = os.path.join(BASE_DIR, 'data/train-cleansed-A.txt')
+        default = os.path.join(BASE_DIR, 'data/sample.txt')
     )
 
     parser.add_argument("-m",
@@ -56,8 +58,7 @@ def main():
     parser.add_argument("-g",
         dest = "grid",
         help = "Perform Grid Search",
-        type = bool,
-        #default = True
+        action = 'store_true',
         default = False
     )
 
@@ -70,6 +71,8 @@ def main():
     txt_files = glob.glob(args.txt)
     model_path = args.model
 
+
+    print model_path
 
     # Cannot train on empty list
     if not txt_files:
@@ -120,6 +123,7 @@ def train(X, Y, model_path=None, grid=False, feat_obj=None):
     X = extract_features(X, feat_obj)
 
     # Train model
+    print 'train: ', model_path
     return train_vectorized(X, Y, model_path, grid)
 
 
@@ -148,9 +152,11 @@ def train_vectorized(X, Y, model_path=None, grid=False):
         #clf = LogisticRegression(C=1000.0)
         clf = LinearSVC(C=0.1)
         #clf = svm.SVC(C=0.1, gamma=10.0)
+        #clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
         clf.fit(X, Y)
 
     # Save model
+    print 'train_vectorized: ', model_path
     if model_path:
         with open(model_path+'.dict' , 'wb') as f:
             pickle.dump(vec, f)

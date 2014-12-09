@@ -87,6 +87,13 @@ def scores_to_features(scores, lexName, featName):
     return features
 
 
+def context_lookup(lookup_fcn, w):
+    """ Attempt to do proper lookup. Actually does worse """
+    #negated = -0.3 if (w[-4:] == '_neg') else 1
+    #w = w[:-4]
+    score = lookup_fcn(w) # * negated
+    return score
+
 
 
 def opinion_lexicon_features(phrase):
@@ -98,7 +105,8 @@ def opinion_lexicon_features(phrase):
     Opi_sentiments = defaultdict(lambda:0)
     for word in phrase:
         label = lexOpi.lookup(word)
-        Opi_sentiments[label] += 1
+        if label != 'neutral':
+            Opi_sentiments[label] += 1
     for sentiment,count in Opi_sentiments.items():
         if sentiment ==        '': continue
         features[ ('Opi-count', sentiment) ] = count
@@ -136,8 +144,10 @@ def emotion_lexicon_features(phrase):
     # Emotion Scores
     lexEmo_uni_scores = defaultdict(lambda:[])
     for w in phrase:
+        context = (w[-4:] == '_neg')
+        if context: w = w[:-4]
         senti = lexEmo.lookup(w)
-        lexEmo_uni_scores[senti[0]].append( senti[1] )
+        lexEmo_uni_scores[senti[0], context].append( senti[1] )
 
     # Get features for each kind of emotion
     features = {}
@@ -161,27 +171,21 @@ def affin_lexicon_features(phrase):
 
 def brown_cluster_features(phrase):
 
-    features = {}
+    features = defaultdict(lambda:0)
 
     # Add Brown Cluster Features
     lastCluster = None
-    clusterDict = lexClus.getBlankDict()
     for word in phrase:
+        context = (word[-4:] == '_neg')
+        if context: word = word[:-4]
         wordCluster = lexClus.getCluster(word)
         if wordCluster != None:
-            if ('Cluster-count',wordCluster) in features.keys():
-                features[('Cluster-count',wordCluster)] += 1
-            else:
-                features[('Cluster-count',wordCluster)] = 1
-            #clusterDict[wordCluster] += 1
+            features[('Cluster-count',(context,wordCluster))] += 1
             lastCluster = wordCluster
-    for key in clusterDict:
-        if clusterDict[key] > 0:
-            features[('Cluster-count',key)] = clusterDict[key]
     if lastCluster != None:
         features[('Cluster-last',lastCluster)] = 1
 
-    return features
+    return dict(features)
 
 
 
@@ -221,7 +225,10 @@ def sentiment_lexicon_features(phrase, lexName, lex):
     # Unigram features
     def sentiment_lexicon_unigram_features():
         # Build unigram scores
-        uni_scores  = [ lex.lookupUnigram(w).score  for  w  in  phrase  ]
+        uni_scores = []
+        for word in phrase:
+            score = context_lookup( lambda w: lex.lookupUnigram(w).score, word)
+            uni_scores.append(score)
 
         # Get features for unigrams
         return scores_to_features(uni_scores, lexName, 'unigram')
@@ -291,12 +298,19 @@ def lexicon_features(sentence, begin, end, ark_tweet=None):
     # Light normalization
     phrase = light_normalize(sentence, begin, end, ark_tweet)
 
+    #print sentence
+    #print sentence[begin:end]
+    #print phrase
+    #print 
+
     # Aplly all twitter-specfic lexicons
     features.update(   opinion_lexicon_features(phrase)                  )
     features.update( sentiment_lexicon_features(phrase,  'HTS', lexHTS ) )
     features.update( sentiment_lexicon_features(phrase, 'S140', lexS140) )
     features.update(   emotion_lexicon_features(phrase)                  )
-    features.update(     brown_cluster_features(phrase)                  )
+
+    # Not including will boost results
+    #features.update(     brown_cluster_features(phrase)                  )
 
 
     # Heavier normalization (ex. spell correct & hashtag split)
@@ -304,8 +318,10 @@ def lexicon_features(sentence, begin, end, ark_tweet=None):
 
     # Apply all general-purpose lexicons
     features.update( subjectivity_lexicon_features(phrase)                  )
-    features.update(        affin_lexicon_features(phrase)                  )
-    features.update(     general_inquirer_features(phrase)                  )
+
+    # Not including will boost results
+    #features.update(        affin_lexicon_features(phrase)                  )
+    #features.update(     general_inquirer_features(phrase)                  )
 
     #if features:
     #    print phrase
