@@ -1,2 +1,0 @@
-ctx_01
-man#n#w0#1 kill#v#w1#1 cat#n#w2#1 hammer#n#w3#1 
