@@ -10,6 +10,7 @@
 import os, sys
 import re
 from copy import copy
+from collections import defaultdict
 
 import note
 
@@ -34,7 +35,7 @@ from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
 from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
-#from common_lib.common_features.ukb          import ukb_wsd
+from common_lib.common_features.ukb          import ukb_wsd
 
 
 st = nltk.stem.PorterStemmer()
@@ -60,10 +61,13 @@ class FeaturesWrapper:
             self.url = url.Url()
 
         # Count all token frequencies
-        #tf_idf._build_dictionary(self.ark_tweet, os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/etc/data'))
+        tf_idf._build_dictionary(self.ark_tweet, os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/etc/data'))
 
-        #if enabled_modules['ukb_wsd']:
-        #    self.ukb = ukb_wsd.ukbWSD()
+        # Spellinf correction
+        self.speller = spell.SpellChecker()
+
+        if enabled_modules['ukb_wsd']:
+            self.ukb = ukb_wsd.ukbWSD()
 
 
 
@@ -91,7 +95,21 @@ class FeaturesWrapper:
 
         # Batch update of external modules
         if enabled_modules['ark_tweet'   ]:
-            self.ark_tweet.resolve( data)
+            self.ark_tweet.resolve(data)
+
+        '''
+        # Re-tokenize the newly spell corrected stuff
+        if enabled_modules['ark_tweet'   ]:
+            tweets = []
+            for text in data:
+                phrase = utilities.tokenize(text, self.ark_tweet)
+                pos = self.ark_tweet.posTags(text)
+                unis = self.speller.correct_spelling(phrase, pos)
+                newSent = ' '.join(unis)
+                tweets.append(newSent)
+            self.ark_tweet.resolve(tweets)
+        '''
+        
 
         # Get features for each tweet
         features_list= [ self.features_for_tweet(t,s) for t,s in zip(data,sids) ]
@@ -116,69 +134,119 @@ class FeaturesWrapper:
         # Feature dictionary
         features = {}
 
-
-        # Tweet representation (list of tokens/strings)
-        phrase = utilities.tokenize(tweet, self.ark_tweet)
-        normalized = utilities.normalize_phrase_TaskB(phrase)
-        stemmed = [st.stem(t) for t in normalized]
-
         # POS list
         if enabled_modules['ark_tweet']:
             pos = self.ark_tweet.posTags(tweet)
         else:
             pos = None
 
+        # Tweet representation (list of tokens/strings)
+        phrase = utilities.tokenize(tweet, self.ark_tweet)
+        unis = self.speller.correct_spelling(phrase, pos)
+        #unis = phrase
+
+        # Re-tokenize the newly spell corrected stuff
+        #newSent = ' '.join(unis)
+        #newToks = utilities.tokenize(tweet, self.ark_tweet)
+
+        # Normalize sentence
+        normalized = utilities.normalize_phrase_TaskB(unis)
+
+        stemmed = []
+        for word in normalized:
+            if word[-4:] == '_neg': word = word[:-4]
+            stemmed.append(st.stem(word))
+
+
+        '''
+        for w,u,n,s in zip(phrase,unis,normalized,stemmed):
+            print w, '\t', u
+            print '\t', n
+            print '\t', s
+            print
+        print '\n'
+        '''
+
 
         # Feature: Unigram Tokens
-        unis = spell.correct_spelling(normalized, pos)
-        for i,word in enumerate(unis):
-            #print word, '\t', normalized[i]
+        uni_freqs = defaultdict(lambda:0)
+        for i,word in enumerate(normalized):
             if word == '': continue
-            if not any(c.isalpha() for c in word): continue
-            if tf_idf.doc_freq(word) == 1: continue
+            if tf_idf.doc_freq(phrase[i]) <   3: continue
+            if tf_idf.doc_freq(phrase[i]) > 900: continue
             if pos:
                 # Exclude proper nouns
                 if pos[i] != '^':
-                    features[('unigram_tok', word)] = 1
-                    features[('sunigram_tok', st.stem(word))] = 1
-                #else:
-                #    print word
+                    uni_freqs[(phrase[i],word)] += 1
             else:
-                features[('unigram_tok', word)] = 1
-                features[('sunigram_tok', st.stem(word))] = 1
+                uni_freqs[(phrase[i],word)] += 1
 
-        #print
+        for key,tf in uni_freqs.items():
+            orig,word = key
+            if word[-4:] == '_neg':
+                word = word[:-4]
+                score = -1
+            else:
+                score = 1
+            # upweight for caps
+            #if orig.isupper():
+            #    score *= 2
+            features[('uni_tok'     ,        word) ] = score
+            features[('uni_stem_tok',st.stem(word))] = score
+
+        #for orig,corrected in zip(normalized,unis):
+        #    print orig, '\t\t\t', corrected
+        #print '-' * 20, '\n'
 
 
         #exit()
 
         # Feature: Bigram Tokens
-        for i in range(len(unis)-1):
-            bigram  = tuple(unis[i:i+2])
-            sbigram = tuple(unis[i:i+2])
+        for i in range(len(normalized)-1):
+            bigram  = tuple(normalized[i:i+2])
+            sbigram = tuple(   stemmed[i:i+2])
+
+            # short circuits
             if any(w == '' for w in bigram): continue
-            if not any(c.isalpha() for c in ''.join(bigram)): continue
-            if any(tf_idf.doc_freq(w) == 1 for w in bigram): continue
-            features[('bigram_tok',bigram)] = 1
-            features[('sbigram_tok',sbigram)] = 1
+            if any(tf_idf.doc_freq(phrase[i]) <   3 for w in range(2)): continue
+            if any(tf_idf.doc_freq(phrase[i]) > 900 for w in range(2)): continue
+
+            # context 
+            t1,t2 = bigram
+            if t1[-4:] == '_neg': 
+                t1 = t1[:-4]
+                score = -1
+            else:
+                score = 1
+            if t2[-4:] == '_neg': 
+                t2 = t2[:-4]
+
+            features[( 'bigram_tok',(t1,t2))] = score
+            features[('sbigram_tok',sbigram)] = score
 
 
         # Feature: Trigram Tokens
-        '''
-        for i in range(len(normalized)-2):
-            trigram  = tuple(normalized[i:i+3])
-            strigram = tuple(   stemmed[i:i+3])
+        for i in range(len(unis)-2):
+            trigram  = tuple(   unis[i:i+3])
+            strigram = tuple(stemmed[i:i+3])
             if any(w == '' for w in trigram): continue
-            if not any(c.isalpha() for c in ''.join(trigram)): continue
+            if any(tf_idf.doc_freq(phrase[i]) <   3 for w in range(3)): continue
+            if any(tf_idf.doc_freq(phrase[i]) > 900 for w in range(3)): continue
+
+            t1,t2,t3 = trigram
+            if t1[-4:] == '_neg': 
+                t1 = t1[:-4]
+                score = -1
+            else:
+                score = 1
+            if t2[-4:] == '_neg': 
+                t2 = t2[:-4]
+            if t3[-4:] == '_neg': 
+                t3 = t3[:-4]
+
             features[('trigram_tok',trigram)] = 1
             features[('strigram_tok',strigram)] = 1
-        '''
 
-
-        # Feature: twitter_data features
-        if enabled_modules['twitter_data']:
-            tdata_feats = self.twitter_data.features(sid)
-            features.update(tdata_feats)
 
 
         # Feature: Lexicon Features
@@ -193,6 +261,12 @@ class FeaturesWrapper:
             features.update(ark_feats)
 
 
+        '''
+        # Feature: twitter_data features
+        if enabled_modules['twitter_data']:
+            tdata_feats = self.twitter_data.features(sid)
+            features.update(tdata_feats)
+
 
         # Feature: URL Features
         if enabled_modules['url']:
@@ -202,7 +276,6 @@ class FeaturesWrapper:
                 features.update(feats)
 
 
-
         # Feature: Split hashtag
         if enabled_modules['hashtag']:
             hashtags = [ w for w in normalized if len(w) and (w[0]=='#') ]
@@ -210,6 +283,7 @@ class FeaturesWrapper:
                 toks = hashtag.split_hashtag(ht)
                 for tok in toks:
                     features[('hashtag-tok',tok.lower())] = 1
+        '''
  
 
         # Feature: Punctuation counts
@@ -222,7 +296,6 @@ class FeaturesWrapper:
         features['phrase_length'] = len(phrase) / 4
 
 
-        '''
         if enabled_modules['ukb_wsd'] and enabled_modules['ark_tweet']:
             #add ukb wsd features
             if self.ukb.cache.has_key( tweet ):
@@ -238,10 +311,8 @@ class FeaturesWrapper:
                         features[('wsd',s[0])] += s[1]
                     else:
                         features[('wsd',s[0])] = s[1]
-        '''
 
 
-        # Result: Good :)
         # Feature: Contains long word? (boolean)
         long_word_threshold = 8
         contains_long_word = False
@@ -252,10 +323,9 @@ class FeaturesWrapper:
         features[ ('contains_long_word',contains_long_word) ] = 1
 
 
-        # Rating: Doesn't make it worse
         # Feature: Prefixes and Suffixes
         n = [2,3]
-        normalized = utilities.normalize_phrase_TaskB(phrase)
+        #normalized = utilities.normalize_phrase_TaskB(phrase)
         for i,word in enumerate(normalized):
             for j in n:
                 if word[-4:] == '_neg': word = word[:-3]
@@ -267,7 +337,6 @@ class FeaturesWrapper:
                 features[ ('suffix',suffix) ] = 1
 
 
-        # Rating: Contributes .02
         # Feature: Emoticon Counts
         elabels = { 'positive':0, 'negative':0, 'neutral':0 }
         for word in phrase:

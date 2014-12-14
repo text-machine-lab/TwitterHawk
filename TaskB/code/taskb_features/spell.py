@@ -1,24 +1,161 @@
 
 
 import enchant
+
 import os
+import sys
 import string
 import re
 
 
+# Add common-lib code to system path
+sources = os.getenv('BISCUIT_DIR')
+if sources not in sys.path: sys.path.append(sources)
+from common_lib.read_config import enabled_modules
+from common_lib.cache       import Cache
 
-# Global spell checker
-d = enchant.Dict("en_US")
+from common_lib.common_lexicons import emoticons
 
 
 
-# Common abbreviations and mistakes
-common = {}
-with open(os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/etc/abbrv.txt'),'r') as f:
-    for line in f.readlines():
-        if line == '\n': continue
-        abbrev,full = tuple(line.split())
-        common[abbrev] = full
+# for debugging
+_debug = False
+
+
+
+class SpellChecker:
+
+
+    def __init__(self):
+
+        # Global spell checker
+        self.d = enchant.Dict("en_US")
+
+        # Common abbreviations and mistakes
+        self.common = {}
+        abbrevs = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/etc/abbrv.txt')
+        with open(abbrevs,'r') as f:
+            for line in f.readlines():
+                if line == '\n': continue
+                abbrev,full = tuple(line.split())
+                self.common[abbrev] = full
+
+        # Load cache of spell-corrected words
+        self.cache = Cache('B-enchant')
+
+
+
+    def correct_spelling(self, phrase, pos=None):
+
+        #return phrase
+
+        # Memoized?
+        key = tuple(phrase)
+        if self.cache.has_key(key): 
+            return self.cache.get_map(key)
+
+        cands = []
+
+        # Build all possible candidates
+        for i,w in enumerate(phrase):
+
+            if _debug: print w
+
+            # Special form
+            if do_not_alter(w,pos,i):
+
+                if _debug: print '\tSTATIC'
+                cands.append([w])
+
+            # Numbers
+            elif re.search('\d',w):
+
+                if _debug: print '\tNumber'
+                cands.append(['000'])
+
+            # Regexes
+            elif re.search('^a*(?:h+q?a+)+h*$',w):
+                if _debug: print '\tHAHA'
+                cands.append(['haha'])
+            elif re.search('^(?:h+e+)*$',w):
+                if _debug: print '\tHEHE'
+                cands.append(['haha'])
+            elif re.search('^o*(?:xo)+x*$',w):
+                if _debug: print '\tXOXO'
+                cands.append(['xoxo'])
+            elif re.search('^l(?:ol)+$',w):
+                if _debug: print '\tLOLOL'
+                cands.append(['lol'])
+
+            # Common abbreviations / mistakes
+            elif w.lower() in self.common:
+
+                if _debug: print '\tCOMMON'
+                cands.append([self.common[w.lower()]])
+
+            # Normal
+            else:
+
+                # FIXME: do this during tokenization
+                if w[-2:] ==  "'s": w = w[:-2]
+                if w[-2:] ==  "'m": w = w[:-2]
+                if w[-3:] == "'ve": w = w[:-2]
+                if w[-3:] == "'ll": w = w[:-2]
+
+                # Capitalized often means proper noun
+                if w[0].isupper():
+                    if _debug: '\tMAYBE PROPER NOUN'
+                    possible = [w]
+
+                # Spelled correct?
+                elif self.d.check(w):
+                    if _debug: print '\tCORRECT!'
+                    possible = [w]
+
+                # Try fixing with repeated characters
+                elif elongated_characters(w):
+                    # Remove duplicated characters down to just 2 remaining
+                    if _debug: print '\tELONGATED'
+                    possible = [remove_duplicates(w)]
+                    #print w, '\t->\t', possible[0]
+
+                # Backoff to spell checker correction
+                else:
+                    if _debug: print '\tCHECKING SUGGESTIONS'
+
+                    if not self.cache.has_key(w):
+
+                        # Run spell ccorrection
+                        possible = self.d.suggest(w)
+
+                        #print phrase[i-3:i+4]
+                        #print w, '\t', possible[0]
+                        #print
+
+                        # If no matches, then use original
+                        if possible == []: 
+                            possible = [w]
+
+                        self.cache.add_map(key,possible)
+
+                    # lookup cached spell corrections
+                    else:
+                        possible = self.cache.get_map(w)
+
+                cands.append(possible)
+
+        #for c in cands:
+        #    print c
+        #print
+
+        # Select proper candidate
+        corrected = [ choices[0] for choices in cands ] 
+
+        # memoize
+        self.cache.add_map(key,corrected)
+
+        return corrected
+
 
 
 
@@ -44,101 +181,16 @@ def do_not_alter(w,pos,i):
 
     # URL
     if w[:7] == 'http://':                      return True
+    if re.search('www\\.',w):                   return True
+    if re.search('\\.com',w):                   return True
+    if re.search('t\\.co',w):                   return True
+
+    # Emoticon
+    if emoticons.emoticon_type(w):              return True
 
     # Not special
     return False
 
-
-
-# for debugging
-seen = []
-
-
-def correct_spelling(phrase, pos=None):
-
-    #return phrase
-
-    cands = []
-
-    # Build all possible candidates
-    for i,w in enumerate(phrase):
-
-        # Special form
-        if do_not_alter(w,pos,i):
-
-            cands.append([w])
-
-        # Time
-        elif re.search('\d+',w):
-
-            cands.append(['<time>'])
-
-        # Regexes
-        elif re.search('a*(?:ha)+h*',w):
-            cands.append(['laughing'])
-        elif re.search('o*(?:xo)+x*',w):
-            cands.append(['kisses'])
-
-        # Common abbreviations / mistakes
-        elif w in common:
-
-            cands.append([common[w]])
-
-        # Common abbreviations / mistakes
-        elif w[-4:]=='neg' and w[:-4] in common:
-
-            cands.append([common[w[:-4]]]+'_neg')
-
-        # Normal
-        else:
-
-            # Negated?
-            if w[-4:] == '_neg':
-                w = w[:-4]
-                neg = True
-            else:
-                neg = False
-
-            # FIXME: do this during tokenization
-            if w[-2:] == "'s": w = w[:-2]
-
-            # Spelled correct?
-            if d.check(w) or d.check(w[0].upper()+w[1:]):
-                possible = [w]
-
-            # Try fixing with repeated characters
-            elif elongated_characters(w):
-                # Remove duplicated characters down to just 2 remaining
-                possible = [remove_duplicates(w)]
-                #print w, '\t->\t', possible[0]
-
-            # Backoff to spell checker correction
-            else:
-                possible = d.suggest(w)
-
-                # If no matches, then use original
-                if possible == []: 
-                    possible = [w]
-
-                '''
-                if w not in seen:
-                    seen.append(w)
-                    print phrase[i-3:i+4]
-                    print w, '\t', possible[0]
-                    print
-                '''
-
-            possible = [ w.lower() for w in possible ]
-            if neg: possible = [ w+'_neg' for w in possible ]
-            cands.append(possible)
-
-    #for c in cands:
-    #    print c
-
-    # Select proper candidate
-    corrected = [ choices[0] for choices in cands ] 
-
-    return corrected
 
 
 
@@ -175,8 +227,6 @@ def remove_duplicates(w):
 
     # No matches
     return ''.join(retVal)
-
-
 
 
 

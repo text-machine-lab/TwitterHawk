@@ -33,8 +33,9 @@ def tokenize(tagger, text):
         all_toks = [ tagger.tokens(t) for t in text ]
     else:
         all_toks = [ t.split()        for t in text ]
-    normed = [ utilities.normalize_phrase_TaskB(toks) for toks in all_toks ]
-    normed = [ spell.correct_spelling(toks) for toks in normed ]
+    normed = all_toks
+    #normed = [ utilities.normalize_phrase_TaskB(toks) for toks in all_toks ]
+    #normed = [ spell.correct_spelling(toks) for toks in normed ]
     return normed
 
 
@@ -43,31 +44,34 @@ def _build_dictionary(tagger, data_path):
 
     global _tf, _df
 
+    all_text = set()
     for fname in os.listdir(data_path):
 
         fpath = os.path.join(data_path, fname)
         with open(fpath, 'r') as f:
 
             # Accumulate list of tweets (just text)
-            all_text = set()
             for line in f.readlines():
                 text = '\t'.join(line.split('\t')[3:]).strip('\n')
                 text = text.decode('ascii','ignore')
                 all_text.add(text)
 
-            # List of "documents" of tokens
-            all_toks = tokenize(tagger,all_text)
-            for doc in all_toks:
+    # List of "documents" of tokens
+    all_toks = tokenize(tagger,all_text)
+    for doc in all_toks:
 
-                # Frequency of each word
-                freqs = defaultdict(lambda:0)
-                for tok in doc:
-                    freqs[tok] += 1
+        # Frequency of each word
+        freqs = defaultdict(lambda:0)
+        for tok in doc:
+            freqs[tok] += 1
 
-                # Count term frequencies and document frequencies
-                for t,f in freqs.items():
-                    _tf[t] += f
-                    _df[t] += 1
+        # Count term frequencies and document frequencies
+        for t,f in freqs.items():
+            _tf[t] += f
+            _df[t] += 1
+
+    #special = map(lambda tup:tup[0], filter(lambda tup:tup[1]==1, _df.items()))
+    #for k in special: print k
 
 
 

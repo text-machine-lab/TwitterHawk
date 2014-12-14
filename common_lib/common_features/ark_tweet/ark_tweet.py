@@ -46,14 +46,15 @@ class ArkTweetNLP:
 
     def normalizeKey(self, tweet):
         clean = lambda txt: self.h.unescape(txt).strip()
-        return clean(clean(tweet))
+        tmp = tweet.decode('utf-8')
+        return clean(clean(tmp))
 
 
-    def resolve(self, data):
+    def resolve(self, original):
 
         #print 'resolve length: ', len(data)
 
-        data = [self.normalizeKey(twt) for twt in set(data)]
+        data = [self.normalizeKey(twt) for twt in set(original)]
 
         # Tag all uncached data
         uncached = [ twt for twt in data if not self.cache.has_key(twt) ]

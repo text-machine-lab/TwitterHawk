@@ -173,7 +173,7 @@ class FeaturesWrapper:
 
             # Full tweet
             full_lex_feats = lexicon_features(sentence,0,len(sentence), ark_tweet=self.ark_tweet)
-            next_lex_feats = {('full-'+k[0],k[1]):0.5*v for k,v in full_lex_feats.items()}
+            full_lex_feats = {('full-'+k[0],k[1]):0.5*v for k,v in full_lex_feats.items()}
             features.update(full_lex_feats)
 
             #print lex_feats

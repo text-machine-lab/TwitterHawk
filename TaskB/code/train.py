@@ -167,9 +167,10 @@ def train_vectorized(feats, Y, model_path=None, grid=False):
         print 'Performing Grid Search'
         clf = do_grid_search(X, Y)
     else:
-        clf = LinearSVC(C=0.1)
+        #clf = LinearSVC(C=0.1)
         #clf = LogisticRegression(C=0.1)
-        #clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
+        clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
+        #clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000)
         clf.fit(X, Y)
 
 
