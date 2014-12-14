@@ -1,6 +1,7 @@
 lexicons     /data1/nlp-data/twitter/data/lexicons
-twitter_data True
-url          True
-hashtag      /data1/wboag/biscuit/Biscuit/TaskB/etc/hashtag
+twitter_data None True
+url          None True
+hashtag      None /data1/wboag/biscuit/Biscuit/TaskB/etc/hashtag
 caches       /data1/nlp-data/twitter/data/caches/
 ark_tweet    /data1/nlp-data/twitter/tools/ark_tweet_nlp_python
+ukb_wsd      None True
