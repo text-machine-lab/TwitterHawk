@@ -32,10 +32,12 @@ class Cache:
 
         print '\tcache constructor (%s_cache)' % name
         self.filename = os.path.join(base_dir, '%s_cache' % name)
+        #print self.filename
 
         try:
             self.cache = pickle.load( open( self.filename ,"rb" ) )
         except IOError:
+            print 'IOError making cache'
             self.cache = {}
 
         # Newly added mappings
