@@ -30,6 +30,15 @@ else:
     _dictionary = {}
 
 
+# Hand annotated hashtags
+annotations = {}
+with open('/data1/nlp-data/twitter/tools/hashtag/ht-expansions.txt', 'r') as f:
+    for line in f.readlines():
+        ht,expansion = line.strip('\n').split(' || ')
+        annotations[ht] = expansion
+
+
+
 # For development: allow module to be run-able
 def main():
 
@@ -144,6 +153,10 @@ def split_hashtag(word):
     @param  word.   A string beginning with a "#"
     @return         A list of words of the tokenized hashtag word
     """
+
+    # Lookup?
+    if word in annotations:
+        return annotations[word].split()
 
     # Acronym?
     if word.isupper(): return [word.strip('#').lower()]
