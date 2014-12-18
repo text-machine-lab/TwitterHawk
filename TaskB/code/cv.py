@@ -51,7 +51,7 @@ def main():
     parser.add_argument("-r",
         dest = "random",
         help = "Random shuffling of input data.",
-        type = bool,
+        action = 'store_true',
         default = False
     )
 
@@ -122,7 +122,7 @@ def main():
         labels = predict.predict_vectorized(X_test, clf, vec)
 
         # Compute confusion matrix for held_out data
-        testing_confusion = evaluate.create_confusion(Y_test, labels)
+        testing_confusion = evaluate.create_confusion(labels, Y_test)
         confusion = add_matrix(confusion, testing_confusion)
 
 

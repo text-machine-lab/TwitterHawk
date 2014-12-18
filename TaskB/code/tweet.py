@@ -40,7 +40,7 @@ class Tweet:
         self.sid   = words[0]
         self.uid   = words[1]
         self.label = words[2]
-        self.sent  = words[3].strip()
+        self.sent  = words[3].strip('\n')
 
 
         # Remove "Not Available" tweets
