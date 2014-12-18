@@ -114,7 +114,7 @@ def train_vectorized(X, Y, model_path=None):
     labels = [ labels_map[y] for y in Y ]
     Y = np.array(  labels  )
 
-    clf = LinearSVC(C=0.1)
+    clf = LinearSVC(C=0.1, class_weight='auto')
     #clf = svm.SVC(C=0.1, gamma=10.0)
     #clf = LogisticRegression(C=1000.0)
     #clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')

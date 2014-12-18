@@ -10,14 +10,18 @@
 import os, sys
 import re
 from copy import copy
+from collections import defaultdict
 
 import note
 
 from nltk.corpus import wordnet as wn   
+import nltk.stem
 import Queue
 
 
 from taskb_lexicon_features import lexicon_features
+import tf_idf
+import spell
 
 
 
@@ -30,7 +34,19 @@ from common_lib.common_features              import utilities
 from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
 from common_lib.common_features.ark_tweet    import ark_tweet
+from common_lib.common_features.twitter_data import twitter_data
 from common_lib.common_features.ukb          import ukb_wsd
+
+
+st = nltk.stem.PorterStemmer()
+
+
+MIN_COUNT = 2
+MAX_COUNT = 600
+
+
+# debug info
+seen = set()
 
 
 class FeaturesWrapper:
@@ -43,9 +59,19 @@ class FeaturesWrapper:
         else:
             self.ark_tweet = None
 
+        # Lookup tweet metadata
+        if enabled_modules['twitter_data']:
+            self.twitter_data = twitter_data.TwitterData()
+
         # Get HTML data from URLs in tweets
         if enabled_modules['url']:
             self.url = url.Url()
+
+        # Count all token frequencies
+        tf_idf._build_dictionary(self.ark_tweet, '/data1/nlp-data/twitter/data/etc/')
+
+        # Spelling correction
+        self.speller = spell.SpellChecker()
 
         if enabled_modules['ukb_wsd']:
             self.ukb = ukb_wsd.ukbWSD()
@@ -64,23 +90,28 @@ class FeaturesWrapper:
         """
 
         # data   - A list of strings
-        data = X
+        sids = [ x[0] for x in X ]
+        data = [ x[1] for x in X ]
+
+        # Batch retrieval of twitter metadata
+        if enabled_modules['twitter_data']:
+            self.twitter_data.resolve(sids, data)
 
         # Remove weird characters
-        data = [ unicode(d.decode('utf-8')) for d in data ]
+        #data = [ unicode(d.decode('utf-8')) for d in data ]
 
         # Batch update of external modules
-        if enabled_modules['ark_tweet']:
-            self.ark_tweet.resolve( data)
+        if enabled_modules['ark_tweet'   ]:
+            self.ark_tweet.resolve(data)
 
         # Get features for each tweet
-        features_list= [ self.features_for_tweet(t) for t in data ]
+        features_list= [ self.features_for_tweet(t,s) for t,s in zip(data,sids) ]
 
         return features_list
 
 
 
-    def features_for_tweet(self, tweet):
+    def features_for_tweet(self, tweet, sid):
 
         """
         Model::features_for_tweet()
@@ -88,67 +119,111 @@ class FeaturesWrapper:
         Purpose: Generate features for a single tweet
 
         @param tweet. A string (the text of a tweet)
+        @param sid.   An int   (the ID   of a tweet)
         @return       A hash table of features
         """
 
         # Feature dictionary
         features = {}
 
+        # POS list
+        if enabled_modules['ark_tweet']:
+            pos = self.ark_tweet.posTags(tweet)
+        else:
+            pos = None
 
         # Tweet representation (list of tokens/strings)
         phrase = utilities.tokenize(tweet, self.ark_tweet)
 
 
-        # Feature: Unigram Tokens
-        normalized = utilities.normalize_phrase_TaskB(phrase)
-        for word in normalized:
-            features[('unigram_tok', word)] = 1
+
+        # Feature: Unedited Unigram Tokens
+        for tok in phrase:
+            if tok == '': continue
+            if tf_idf.doc_freq(tok) < MIN_COUNT: continue
+            if tok in tf_idf.stop_words:         continue
+            features[('unedited-uni-tok',tok)] = 1
 
 
-        # Feature: Lexicon Features
-        if enabled_modules['lexicons']:
-            feats = lexicon_features(phrase)
-            features.update(feats)
+        # Edit misspellings
+        unis = self.speller.correct_spelling(phrase, pos)
+
+        p = False
+        for t in unis: 
+            if ' ' in t:
+                p = True
+        #if p:
+        #    print unis
+
+        # Flatten from multi-word tokens
+        flattened = []
+        flat_pos = []
+        for tok,tag in zip(unis,pos):
+            for w in tok.split():
+                flattened.append(w)
+                flat_pos.append(tag)
+  
+        # Normalize sentence
+        normalized = utilities.normalize_phrase_TaskB(flattened)
 
 
-        # Feature: ark_tweet features (cached based on unescaped text)
-        if enabled_modules['ark_tweet']:
-            ark_feats = self.ark_tweet.features(tweet)
-            features.update(ark_feats)
+        # Feature: Processed Unigram Tokens
+        uni_freqs = defaultdict(lambda:0)
+        for i,word in enumerate(normalized):
+
+            #if p: print word, flat_pos[i]
+            if word == '': continue
+            w = word if (word[-4:]!='_neg') else word[:-4]
+            if tf_idf.doc_freq(w) < MIN_COUNT: continue
+            if w in tf_idf.stop_words:         continue
+
+            # Exclude proper nouns and prepositions
+            if flat_pos:
+                if flat_pos[i] == '^': continue
+                if flat_pos[i] == 'Z': continue
+                if flat_pos[i] == 'P': continue
+                if flat_pos[i] == 'O': continue
+                #if p: print ''
+                uni_freqs[word] += 1
+            else:
+                uni_freqs[word] += 1
+        #if p: print '\n\n'
+
+        feats = defaultdict(lambda:0)
+        for key,tf in uni_freqs.items():
+            word = key
+            if word[-4:] == '_neg':
+                word = word[:-4]
+                score = -1
+            else:
+                score = 1
+            feats[('uni_tok'     ,        word) ] += score
+            feats[('uni_stem_tok',st.stem(word))] += score
+        features.update(feats)
 
 
         # Feature: Punctuation counts
-        text = ' '.join(phrase)
         for c in '!?':
-            features['%s-count'  %c] = len(text.split(c)) - 1
-            #features['%s-streaks'%c] = len(re.findall('[^\\%s]\\%s'%(c,c),text))
+            val = tweet.count(c)
+            if val > 0:
+                features['%s-count' % c] = val
 
 
-        # Result: Slightly better
-        features['phrase_length'] = len(phrase) / 4
+        # Features: Text lengths
+        #features['phrase_length']   = len(tweet) / 140.0
 
 
         # Feature: Contains long word? (boolean)
         long_word_threshold = 8
         contains_long_word = False
         for word in phrase:
+            if len(word) == 0: continue
+            if word[0] == '@': continue
             if len(word) > long_word_threshold:
                 contains_long_word = True
                 break
-        features[ ('contains_long_word',contains_long_word) ] = 1
-
-
-        # Feature: Prefixes and Suffixes
-        n = [2,3]
-        for i,word in enumerate(normalized):
-            for j in n:
-                if word[-4:] == '_neg': word = word[:-3]
-
-                prefix = word[:j]
-                suffix = word[-1-j+1:]
-
-                features[ ('prefix',prefix) ] = 1
-                features[ ('suffix',suffix) ] = 1
+        if contains_long_word:
+            features['contains_long_word'] = 1
 
 
         # Feature: Emoticon Counts
@@ -158,8 +233,159 @@ class FeaturesWrapper:
             if elabel:
                 elabels[elabel] += 1
         for k,v in elabels.items():
-            featname = k + '-emoticon'
-            features[featname] = v
+            if v > 0:
+                featname = k + '-emoticon'
+                features[featname] = v
+
+
+        #'''
+        # Feature: Split hashtag
+        if enabled_modules['hashtag']:
+            hashtags = [ w for w in normalized if len(w) and (w[0]=='#') ]
+            for ht in hashtags:
+                toks = hashtag.split_hashtag(ht)
+                if (ht not in seen) and (ht not in hashtag.annotations):
+                    seen.add(ht)
+                    #print ht, '\t', toks
+                for tok in utilities.normalize_phrase_TaskB(toks):
+                    if tok[-4:] == '_neg':
+                        tok = tok[:-4]
+                        score = -1
+                    else:
+                        score = 1
+                    if len(tok) > 2:
+                        if tf_idf.doc_freq(tok) < MIN_COUNT: continue
+                        if tok in tf_idf.stop_words:         continue
+                        features[('uni_tok'     ,        tok) ] = score
+                        features[('uni_stem_tok',st.stem(tok))] = score
+        #'''
+
+
+        # Feature: Lexicon Features
+        if enabled_modules['lexicons']:
+            feats = lexicon_features(normalized)
+            features.update(feats)
+            if p:
+                pass
+                #print normalized
+                #for k,v in sorted(feats.items()):
+                #    print '\t', k, '\t', v
+                #print
+
+
+        # Features: contains twitter-specific features (hashtags & mentions)
+        contains_hashtag = False
+        contains_mention = False
+        for tok in phrase:
+            if tok == '': continue
+            if tok[0] == '@': contains_mention = True
+            if tok[0] == '#': contains_hashtag = True
+        if contains_hashtag: features['contains_hashtag'] = 1
+        if contains_mention: features['contains_mention'] = 1
+
+
+        '''
+        if p: print unis
+        for k,v in features.items():
+            if p: 
+                print k, '\t', v
+
+        if p: print
+
+
+        #exit()
+        '''
+        return features
+
+
+        # Feature: Bigram Tokens
+        flattened = []
+        for tok in normalized:
+            flattened += tok.split()
+        for i in range(len(flattened)-1):
+            bigram  = tuple(flattened[i:i+2])
+
+            # short circuits
+            if any(w == ''                        for w in bigram): continue
+            if any(tf_idf.doc_freq(w) < MIN_COUNT for w in bigram): continue
+            if any(w in tf_idf.stop_words         for w in bigram): continue
+
+            # context 
+            t1,t2 = bigram
+            if t1[-4:] == '_neg': 
+                t1 = t1[:-4]
+                score = -1
+            else:
+                score = 1
+            if t2[-4:] == '_neg': 
+                t2 = t2[:-4]
+
+            sbigram = (st.stem(t1),st.stem(t2))
+            features[( 'bigram_tok',(t1,t2))] = score
+            features[('sbigram_tok',sbigram)] = score
+
+
+
+        # Feature: Trigram Tokens
+        for i in range(len(flattened)-2):
+            trigram  = tuple(flattened[i:i+3])
+            if any(w == '' for w in trigram): continue
+            if any(tf_idf.doc_freq(phrase[i]) < MIN_COUNT for w in range(3)): continue
+            if phrase[i] in tf_idf.stop_words:      continue
+            t1,t2,t3 = trigram
+            if t1[-4:] == '_neg': 
+                t1 = t1[:-4]
+                score = -1
+            else:
+                score = 1
+            if t2[-4:] == '_neg': 
+                t2 = t2[:-4]
+            if t3[-4:] == '_neg': 
+                t3 = t3[:-4]
+
+            features[('trigram_tok',trigram)] = 1
+            #features[('strigram_tok',strigram)] = 1
+
+
+        # Feature: ark_tweet features (cached based on unescaped text)
+        if enabled_modules['ark_tweet']:
+            ark_feats = self.ark_tweet.features(tweet)
+            features.update(ark_feats)
+
+
+        '''
+        # Feature: twitter_data features
+        if enabled_modules['twitter_data']:
+            tdata_feats = self.twitter_data.features(sid)
+            features.update(tdata_feats)
+
+
+        # Feature: URL Features
+        if enabled_modules['url']:
+            urls = [  w  for  w  in  phrase  if  utilities.is_url(w)  ]
+            for url in urls:
+                feats = self.url.features(url)
+                features.update(feats)
+
+
+        '''
+ 
+
+        if enabled_modules['ukb_wsd'] and enabled_modules['ark_tweet']:
+            #add ukb wsd features
+            if self.ukb.cache.has_key( tweet ):
+                wordSenses = self.ukb.cache.get_map( tweet )
+            else:
+                #print tweet
+                wordSenses = self.ukb.ukb_wsd( phrase , self.ark_tweet.posTags( tweet ) )
+                self.ukb.cache.add_map( tweet , wordSenses )
+                
+            for ws in wordSenses:
+                for s in ws:
+                    if ('wsd',s[0]) in features.keys():
+                        features[('wsd',s[0])] += s[1]
+                    else:
+                        features[('wsd',s[0])] = s[1]
 
 
         #print '\n\n\n'
@@ -168,5 +394,4 @@ class FeaturesWrapper:
         #print features
 
         return features
-
 

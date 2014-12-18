@@ -65,6 +65,7 @@ class FeaturesWrapper:
         # Batch update of external modules
         self.ark_tweet.resolve(text)
 
+        '''
         # Batch tweet-level sentiment classification
         print '<TaskB>'
         tweet_labels = predict_full_tweet_sentiment(text)
@@ -72,6 +73,7 @@ class FeaturesWrapper:
         self.tweet_labels = {}
         for txt,label in zip(text,tweet_labels):
             self.tweet_labels[txt] = label
+        '''
 
         # Get features for each tweet
         features_list= [ self.features_for_tweet(t) for t in data ]
@@ -119,11 +121,13 @@ class FeaturesWrapper:
         weights = [ 0.5      , 1.0      ]   
 
 
+        '''
         # Tweet-level label from Task B classifier
         text = ' '.join(sentence)
         text = unicode(text.decode('utf-8'))
         tweet_label = self.tweet_labels[text]
         features[('tweet-level',tweet_label)] = 1
+        '''
 
         # Sentence unigrams
         for toks in normalized:

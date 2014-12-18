@@ -156,7 +156,7 @@ def train_vectorized(X, Y, model_path=None, grid=False):
         clf.fit(X, Y)
 
     # Save model
-    print 'train_vectorized: ', model_path
+    #print 'train_vectorized: ', model_path
     if model_path:
         with open(model_path+'.dict' , 'wb') as f:
             pickle.dump(vec, f)

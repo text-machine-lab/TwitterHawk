@@ -120,7 +120,7 @@ def main():
         labels = predict.predict(X_test, clf, vec, feat_obj=feat_obj)
 
         # Compute confusion matrix for held_out data
-        testing_confusion = evaluate.create_confusion(Y_test, labels)
+        testing_confusion = evaluate.create_confusion(labels, Y_test)
         confusion = add_matrix(confusion, testing_confusion)
 
         # Evaluate

@@ -129,7 +129,7 @@ def main():
         labels = predict_vectorized(X_test, clf, vec)
 
         # Compute confusion matrix for held_out data
-        testing_confusion = create_confusion(Y_test, labels)
+        testing_confusion = create_confusion(labels,Y_test)
         confusion = add_matrix(confusion, testing_confusion)
 
         # Data for analysis

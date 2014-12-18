@@ -17,6 +17,7 @@ import nltk.stem
 
 
 from taska_lexicon_features import lexicon_features
+#import spell
 
 
 # Add common-lib code to system path
@@ -28,7 +29,6 @@ from common_lib.common_features              import utilities
 from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
 from common_lib.common_features              import hashtag
-from common_lib.common_features              import url
 
 
 
@@ -47,13 +47,12 @@ class FeaturesWrapper:
         else:
             self.ark_tweet = None
 
+        # Spelling correction
+        #self.speller = spell.SpellChecker()
+
         # Lookup tweet metadata
         if enabled_modules['twitter_data']:
             self.twitter_data = twitter_data.TwitterData()
-
-        # Get HTML data from URLs in tweets
-        if enabled_modules['url']:
-            self.url = url.Url()
 
 
 
@@ -109,15 +108,15 @@ class FeaturesWrapper:
         phrase   = sentence[begin:end+1]
 
 
-        print phrase
-        return {}
+        #print phrase
+        #return {}
 
         # Feature Dictionary
         features = {}
 
 
         # Normalize all text (tokenizer, stem, etc)
-        normalized = utilities.normalize_phrase_TaskA(sentence, ark_tweet=self.ark_tweet)
+        normalized = utilities.normalize_phrase_TaskA(sentence,ark_tweet=self.ark_tweet)
         flat_normed = [ w for words in normalized for w in words ]
 
 
@@ -125,6 +124,12 @@ class FeaturesWrapper:
         window = 3
         prefix_start = max(begin-window, 0)
         context = sentence[prefix_start:end+1+window]
+
+        # Feature: unedited term unigrams
+        for tok in phrase:
+            if tok == '': continue
+            if tok in utilities.stop_words:         continue
+            features[('unedited-uni-tok',tok)] = 1
 
 
         # Term unigrams
@@ -179,14 +184,7 @@ class FeaturesWrapper:
             features.update(tdata_feats)
 
 
-        # Feature: URL Features
-        if enabled_modules['url']:
-            urls = [  w  for  w  in  context  if  utilities.is_url(w)  ]
-            for url in urls:
-                feats = self.url.features(url)
-                features.update(feats)
-
-
+        '''
         # Feature: Split hashtag
         if enabled_modules['hashtag']:
             hashtags = [ w for w in flat_normed if len(w) and (w[0]=='#') ]
@@ -195,6 +193,26 @@ class FeaturesWrapper:
                 #print ht, '\t', toks
                 for tok in toks:
                     features[('hashtag-tok',tok.lower())] = 1
+
+        '''
+
+        # Feature: Split hashtag
+        if enabled_modules['hashtag']:
+            hashtags = [ w for w in flat_normed if len(w) and (w[0]=='#') ]
+            for ht in hashtags:
+                toks = hashtag.split_hashtag(ht)
+                for tok in utilities.normalize_phrase_TaskB(toks):
+                    if tok[-4:] == '_neg':
+                        tok = tok[:-4]
+                        score = -1
+                    else:
+                        score = 1
+                    if len(tok) > 2:
+                        if tok in utilities.stop_words: continue
+                        features[('trailing_unigram'    ,        tok) ] = score
+                        features[('stemmed_term_unigram',st.stem(tok))] = score
+
+        #'''
 
         #print
         #print sentence
@@ -207,6 +225,8 @@ class FeaturesWrapper:
         features['first_unigram'] = sentence[begin]
         features[ 'last_unigram'] = sentence[  end]
         features['phrase_length'] = len(' '.join(sentence)) / 140.0
+        features['is_first'] = (begin == 0)
+        features['is_last'] = (end == len(sentence)-1)
 
 
         # Feature: Whether every word is a stop word

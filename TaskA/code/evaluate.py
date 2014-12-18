@@ -119,8 +119,8 @@ def display_confusion(confusion, out=sys.stdout):
 
     for lab, lab_v in labels.items():
         tp = confusion[lab_v][lab_v]
-        fp = sum(confusion[v][lab_v] for k, v in labels.items() if v != lab_v)
-        fn = sum(confusion[lab_v][v] for k, v in labels.items() if v != lab_v)
+        fp = sum(confusion[lab_v][v] for k, v in labels.items() if v != lab_v)
+        fn = sum(confusion[v][lab_v] for k, v in labels.items() if v != lab_v)
         tn = sum(confusion[v1][v2] for k1, v1 in labels.items()
           for k2, v2 in labels.items() if v1 != lab_v and v2 != lab_v)
         precision += [float(tp) / (tp + fp + 1e-100)]
