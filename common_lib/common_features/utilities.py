@@ -28,12 +28,11 @@ neg_words  = frozenset(['no', 'not', 'none', 'nobody', 'nothing',
                         'nowhere', 'never', 'neither'])
 
 # Stop words
-stop_words = frozenset( ["a"   , "an"   , "and"  , "are"  , "as"  , "at"   ,
-                         "be"  , "but"  , "by"   , "for"  , "if"  , "in"   ,
-                         "into", "is"   , "it"   ,                  "of"   ,
-                         "on"  , "or"   , "such" , "that" , "the" , "their",
-                         "then", "there", "these", "they" , "this", "to"   ,
-                         "was" , "will" , "with"                           ] )
+stop_words = set()
+with open('/data1/nlp-data/twitter/tools/stop-words.txt', 'r') as f:
+    for line in f.readlines():
+        if line == '\n': continue
+        stop_words.add(line.strip())
 
 
 # Stemmer for words
@@ -63,14 +62,14 @@ def normalize_phrase_TaskA(sentence, ark_tweet=None, stem=False):
 
     # Form full string of text
     if ark_tweet:
-        text = ark_tweet.normalizeKey( ' '.join(sentence) )
+        orig_text = ' '.join(sentence)
     else:
         clean = lambda txt: h.unescape(txt).strip()
-        text = clean(clean(' '.join(sentence)))
+        orig_text = clean(clean(' '.join(sentence)))
 
 
     # Save character index that each token ends at
-    text = text.replace('\n', ' ').replace('\t', ' ')
+    text = orig_text.replace('\n', ' ').replace('\t', ' ')
     curr = len(text.split(' ')[0])
     indices = [curr]
     for w in text.split(' ')[1:]:
@@ -91,7 +90,7 @@ def normalize_phrase_TaskA(sentence, ark_tweet=None, stem=False):
     '''
 
     # Tokenize
-    toks = tokenize(text, ark_tweet)
+    toks = tokenize(orig_text, ark_tweet)
 
 
     #print 'sent: ', sentence
@@ -186,7 +185,7 @@ def normalize_phrase(phrase, stem=False):
 
             # Number
             elif is_number(word):
-                tok =['<generic#>']
+                tok =['000']
 
             # Negation
             elif is_negation(word):
@@ -212,6 +211,7 @@ def normalize_phrase(phrase, stem=False):
             elif word[0] == '@':
                 tok = ['@someuser']
 
+            # TODO - move about punctuation check
             # Hashtag
             elif '#' in word:
                 matches = w.split('#')
@@ -228,7 +228,7 @@ def normalize_phrase(phrase, stem=False):
             else:
                 word = word.strip(string.punctuation)
                 if word in stop_words:
-                    tok = ['']
+                    tok = [word]
                 else:
                     if negated: word = word + '_neg'
                     tok = [word]
@@ -247,6 +247,7 @@ def normalize_phrase(phrase, stem=False):
 
 
 def is_number(n):
+    return (re.search('\d',n) != None)
     if n.isalpha(): return False
     try:
         float(n)
@@ -269,9 +270,9 @@ def is_url(word):
 
     if word[:7]  == 'http://': return True
     if word[:4]  == 'www.'   : return True
-    if word[-4:] ==    '.com': return True
-    if word[-4:] ==    '.net': return True
-    if word[-4:] ==    '.org': return True
+    if '.com' in word: return True
+    if '.net' in word: return True
+    if '.org' in word: return True
 
     return False
 
