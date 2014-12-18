@@ -32,7 +32,7 @@ if enabled_modules['lexicons']:
 
 
 def light_normalize(phrase):
-    return [  word.lower()  for  word  in  phrase  ]
+    return [  word.lower()  for  word  in  phrase  if  word != ''  ]
 
 
 def heavy_normalize(phrase):
@@ -158,7 +158,7 @@ def affin_lexicon_features(phrase):
 
     #Add Affin Features
     affTotal = 0
-    affDict = {n:0 for n in range(-5,6)}
+    affDict = defaultdict(lambda:0)
     affLast = 0
     for word in phrase:
         affScore = lexAff.score(word)
@@ -181,7 +181,7 @@ def brown_cluster_features(phrase):
 
     #Add Brown Cluster Features
     lastCluster = None
-    clusterDict = lexClus.getBlankDict()
+    clusterDict = defaultdict(lambda:0)
     for word in phrase:
         wordCluster = lexClus.getCluster(word)
         if wordCluster != None:
