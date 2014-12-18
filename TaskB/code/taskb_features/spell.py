@@ -4,7 +4,7 @@ import enchant
 
 import os
 import sys
-import string
+from string import punctuation
 import re
 
 
@@ -20,6 +20,7 @@ from common_lib.common_lexicons import emoticons
 
 # for debugging
 _debug = False
+seen = set()
 
 
 
@@ -33,11 +34,11 @@ class SpellChecker:
 
         # Common abbreviations and mistakes
         self.common = {}
-        abbrevs = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB/etc/abbrv.txt')
+        abbrevs = os.path.join('/data1/nlp-data/twitter/tools/spell/abbrv.txt')
         with open(abbrevs,'r') as f:
             for line in f.readlines():
                 if line == '\n': continue
-                abbrev,full = tuple(line.split())
+                abbrev,full = tuple(line.strip('\n').split(' || '))
                 self.common[abbrev] = full
 
         # Load cache of spell-corrected words
@@ -51,7 +52,8 @@ class SpellChecker:
 
         # Memoized?
         key = tuple(phrase)
-        if self.cache.has_key(key): 
+        #if self.cache.has_key(key): 
+        if False:
             return self.cache.get_map(key)
 
         cands = []
@@ -102,6 +104,12 @@ class SpellChecker:
                 if w[-3:] == "'ve": w = w[:-2]
                 if w[-3:] == "'ll": w = w[:-2]
 
+                # ends in exlamation mark context
+                exclamation = False
+                if re.search('^[^!]*!$',w): 
+                    w = w.strip('!')
+                    exclamation = True
+
                 # Capitalized often means proper noun
                 if w[0].isupper():
                     if _debug: '\tMAYBE PROPER NOUN'
@@ -119,28 +127,62 @@ class SpellChecker:
                     possible = [remove_duplicates(w)]
                     #print w, '\t->\t', possible[0]
 
+                # Leading apostraphe
+                elif (w[-1] == "'") and (self.d.check(w[:-1])):
+                    if _debug: print '\tAPOSTRAPHE!'
+                    possible = [w[:-1]]
+
+                # Word not separated from punctuation
+                elif (w[0] in punctuation) or (w[-1] in punctuation):
+                    # Separate word from leading and trailing punctuation
+                    match = re.search("([^a-zA-Z]*)([a-zA-z']*)([^a-zA-Z]*)",w)
+                    leading,word,trailing = match.groups()
+
+                    possible = []
+                    if leading: possible.append(leading)
+                    if word in self.common:
+                        possible.append(self.common[word])
+                    else:
+                        possible.append(word)
+                    if trailing: possible.append(trailing)
+
+                    #print w, ' -> ', possible
+
                 # Backoff to spell checker correction
                 else:
                     if _debug: print '\tCHECKING SUGGESTIONS'
 
-                    if not self.cache.has_key(w):
+                    #if not self.cache.has_key(w):
+                    if True: 
 
                         # Run spell ccorrection
                         possible = self.d.suggest(w)
-
-                        #print phrase[i-3:i+4]
-                        #print w, '\t', possible[0]
-                        #print
 
                         # If no matches, then use original
                         if possible == []: 
                             possible = [w]
 
-                        self.cache.add_map(key,possible)
+                        '''
+                        if (w not in seen) and (edit_distance(w,possible[0])<=2):
+                            seen.add(w)
+                            print phrase[max(i-3,0):i+4]
+                            print w, '\t', possible[0], '\t', edit_distance(w,possible[0])
+                            print
+                        '''
+
+                        # good prediction?
+                        if edit_distance(w,possible[0]) <= 2:
+                            self.cache.add_map(key,possible)
+                        else:
+                            self.cache.add_map(key,w)
 
                     # lookup cached spell corrections
                     else:
                         possible = self.cache.get_map(w)
+
+                # trailing exclamation 
+                if exclamation:
+                    possible = [ w + ' !' for w in possible ]
 
                 cands.append(possible)
 
@@ -165,7 +207,7 @@ def do_not_alter(w,pos,i):
     if w == '':                                 return True
 
     # All punctuation
-    if all(c in string.punctuation for c in w): return True
+    if all(c in punctuation for c in w):        return True
 
     # Hashtag
     if w[0] == '#':                             return True
@@ -178,6 +220,9 @@ def do_not_alter(w,pos,i):
 
     # User mention
     if w[0] == '@':                             return True
+
+    # Common abbreviations
+    if re.search('^(?:[a-zA-Z]\\.)+$',w):       return True
 
     # URL
     if w[:7] == 'http://':                      return True
@@ -228,6 +273,21 @@ def remove_duplicates(w):
     # No matches
     return ''.join(retVal)
 
+
+
+def edit_distance(s1, s2):
+    m=len(s1)+1
+    n=len(s2)+1
+
+    tbl = {}
+    for i in range(m): tbl[i,0]=i
+    for j in range(n): tbl[0,j]=j
+    for i in range(1, m):
+        for j in range(1, n):
+            cost = 0 if s1[i-1] == s2[j-1] else 1
+            tbl[i,j] = min(tbl[i, j-1]+1, tbl[i-1, j]+1, tbl[i-1, j-1]+cost)
+
+    return tbl[i,j]
 
 
 
