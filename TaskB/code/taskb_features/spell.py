@@ -30,6 +30,7 @@ class SpellChecker:
     def __init__(self):
 
         # Global spell checker
+        #self.d = enchant.DictWithPWL("en_US", '/data1/wboag/ml/twitvec/twitvec/spelling/output.txt')
         self.d = enchant.Dict("en_US")
 
         # Common abbreviations and mistakes

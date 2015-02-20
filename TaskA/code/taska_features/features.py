@@ -17,7 +17,7 @@ import nltk.stem
 
 
 from taska_lexicon_features import lexicon_features
-#import spell
+import spell
 
 
 # Add common-lib code to system path
@@ -37,6 +37,17 @@ st = nltk.stem.SnowballStemmer('english')
 
 
 
+# Common spelling abbreviations and mistakes
+common = {}
+abbrevs = os.path.join('/data1/nlp-data/twitter/tools/spell/abbrv.txt')
+with open(abbrevs,'r') as f:
+    for line in f.readlines():
+        if line == '\n': continue
+        abbrev,full = tuple(line.strip('\n').split(' || '))
+        common[abbrev] = full
+
+
+
 class FeaturesWrapper:
 
     def __init__(self):
@@ -48,7 +59,7 @@ class FeaturesWrapper:
             self.ark_tweet = None
 
         # Spelling correction
-        #self.speller = spell.SpellChecker()
+        self.speller = spell.SpellChecker()
 
         # Lookup tweet metadata
         if enabled_modules['twitter_data']:
@@ -70,10 +81,6 @@ class FeaturesWrapper:
         # data   - list of (text, begin, end) tuples
         sids = [ x[0] for x in X ]
         data = [ x[1] for x in X ]
-
-        # Batch retrieval of twitter metadata
-        if enabled_modules['twitter_data']:
-            self.twitter_data.resolve(sids, data)
 
         # Remove weird characters
         text = [ ' '.join(t[2]) for t in data ]
@@ -104,20 +111,49 @@ class FeaturesWrapper:
         # data
         begin    = tweet_repr[0]
         end      = tweet_repr[1]
-        sentence = tweet_repr[2]
+        sentence = [ unicode(t.decode('utf-8')) for t in tweet_repr[2] ]
         phrase   = sentence[begin:end+1]
 
-
-        #print phrase
-        #return {}
 
         # Feature Dictionary
         features = {}
 
 
         # Normalize all text (tokenizer, stem, etc)
-        normalized = utilities.normalize_phrase_TaskA(sentence,ark_tweet=self.ark_tweet)
+        corrected = sentence
+        normalized = utilities.normalize_phrase_TaskA(corrected,ark_tweet=self.ark_tweet)
         flat_normed = [ w for words in normalized for w in words ]
+
+
+        # Feature: unedited term unigrams
+        for tok in phrase:
+            if tok == '': continue
+            if tok in utilities.stop_words:      continue
+            features[('unedited-uni-tok',tok)] = 1
+
+
+        # Term unigrams
+        for tok in normalized[begin:end+1]:
+            for word in tok:
+                if word == '': continue
+                if word[0] == '#': continue
+                base  = word if (word[-4:]!='_neg') else word[:-4] 
+                if base in utilities.stop_words:      continue
+
+                if base.lower() in common:
+                    toks = common[base.lower()].split()
+                else:
+                    toks = [base]
+
+                for t in toks:
+                    w = st.stem(t)
+                    if word[-4:] == '_neg':
+                        w += '_neg'
+
+                    weight = 1
+                    if utilities.is_elongated_word(base): weight += 1
+
+                    features[('stemmed_term_unigram', w)] = weight
 
 
         # Unigram context window
@@ -125,34 +161,39 @@ class FeaturesWrapper:
         prefix_start = max(begin-window, 0)
         context = sentence[prefix_start:end+1+window]
 
-        # Feature: unedited term unigrams
-        for tok in phrase:
-            if tok == '': continue
-            if tok in utilities.stop_words:         continue
-            features[('unedited-uni-tok',tok)] = 1
+        norm_context = [ w for t in normalized[begin:end+1] for w in t ]
 
-
-        # Term unigrams
-        for tok in normalized[begin:end+1]:
-            for word in tok:
-                if word[-4:] == '_neg':
-                    stemmed = st.stem(word[:-4]) + '_neg'
-                else:
-                    stemmed = st.stem(word)
-                features[('term_unigram', word )] = 1
-                features[('stemmed_term_unigram', stemmed)] = 1
+        prefix_terms = []
+        for w in reversed([w for t in normalized[prefix_start:begin]for w in t]):
+            if w == '': break
+            prefix_terms.append(w)
+        norm_context = list(reversed(prefix_terms)) + norm_context
+ 
+        suffix_terms = []
+        for w in [ w for t in normalized[end+1:end+1+window] for w in t ]:
+            if w == '': break
+            suffix_terms.append(w)
+        norm_context = norm_context + suffix_terms
 
 
         # Feature: Unigram context
         # Leading
-        for tok in normalized[prefix_start:begin]:
-            for word in tok:
-                features[('leading_unigram', word)] = 1
-        # Trailing
-        for tok in normalized[end+1:end+1+window]:
-            for word in tok:
-                features[('trailing_unigram', word)] = 1
+        for word in norm_context:
+            if word == '': continue
+            w  = word if (word[-4:]!='_neg') else word[:-4] 
+            if w in utilities.stop_words:      continue
+            w = st.stem(self.speller.correct_spelling([w])[0])
+            if word[-4:] == '_neg':
+                w += '_neg'
+            features[('leading_unigram', w)] = 1
 
+        '''
+        print sentence
+        print phrase
+        for k,v in features.items():
+            print '\t', k, '\t', v
+        return features
+        '''
 
         # Feature: Lexicon Features
         if enabled_modules['lexicons']:
@@ -161,10 +202,12 @@ class FeaturesWrapper:
             #print begin, end
             # Phrase in question
             lex_feats = lexicon_features(sentence,begin,end+1,ark_tweet=self.ark_tweet)
+            context_feats = lexicon_features(sentence,prefix_start,end+1+window,ark_tweet=self.ark_tweet)
             features.update(lex_feats)
 
+            '''
             # Leading context
-            prev_lex_feats = lexicon_features(sentence,prefix_start,end+1+window, ark_tweet=self.ark_tweet)
+            prev_lex_feats = lexicon_features(sentence,prefix_start,begin, ark_tweet=self.ark_tweet)
             prev_lex_feats = {('prev-'+k[0],k[1]):v for k,v in prev_lex_feats.items()}
             features.update(prev_lex_feats)
 
@@ -172,47 +215,32 @@ class FeaturesWrapper:
             next_lex_feats = lexicon_features(sentence,end+1,end+1+window, ark_tweet=self.ark_tweet)
             next_lex_feats = {('next-'+k[0],k[1]):v for k,v in next_lex_feats.items()}
             features.update(next_lex_feats)
+            '''
+
+
+            #print phrase
+            #for k,v in lex_feats.items():
+            #    print '\t', k, '\t', v
+            #print
 
             #print lex_feats
             #print prev_lex_feats
             #print next_lex_feats
 
 
-        # Feature: twitter_data features
-        if enabled_modules['twitter_data']:
-            tdata_feats = self.twitter_data.features(sid)
-            features.update(tdata_feats)
-
-
-        '''
         # Feature: Split hashtag
         if enabled_modules['hashtag']:
-            hashtags = [ w for w in flat_normed if len(w) and (w[0]=='#') ]
-            for ht in hashtags:
-                toks = hashtag.split_hashtag(ht)
-                #print ht, '\t', toks
-                for tok in toks:
-                    features[('hashtag-tok',tok.lower())] = 1
-
-        '''
-
-        # Feature: Split hashtag
-        if enabled_modules['hashtag']:
-            hashtags = [ w for w in flat_normed if len(w) and (w[0]=='#') ]
+            hashtags = [ w for w in context if len(w) and (w[0]=='#') ]
             for ht in hashtags:
                 toks = hashtag.split_hashtag(ht)
                 for tok in utilities.normalize_phrase_TaskB(toks):
-                    if tok[-4:] == '_neg':
-                        tok = tok[:-4]
-                        score = -1
-                    else:
-                        score = 1
-                    if len(tok) > 2:
-                        if tok in utilities.stop_words: continue
-                        features[('trailing_unigram'    ,        tok) ] = score
-                        features[('stemmed_term_unigram',st.stem(tok))] = score
+                    w = tok if tok[-4:]!='_neg' else tok[:-4]
+                    stemmed = st.stem(w)
+                    if tok[-4:] == '_neg': stemmed += '_neg'
+                    if len(w) < 2: continue
+                    if w in utilities.stop_words: continue
+                    features[('stemmed_term_unigram',stemmed)] = 1
 
-        #'''
 
         #print
         #print sentence
@@ -220,28 +248,60 @@ class FeaturesWrapper:
         #print end
         #print phrase
 
+        # Feature: Prefixes and Suffixes
+        n = [2,3,4]
+        for i,words in enumerate(normalized[begin:end+1]):
+            for word in words:
+                if len(word) < 2: continue
+                for j in n:
+                    if word[-4:] == '_neg': word = word[:-4]
+
+                    prefix = word[:j ]
+                    suffix = word[-j:]
+
+                    #print '\tprefix: ', prefix
+                    #print '\tsuffix: ', suffix
+                    features[ ('prefix',prefix) ] = 1
+                    features[ ('suffix',suffix) ] = 1
+
+
+        # Features: Special forms
+        if any([ utilities.is_url(w) for w in phrase]):
+            features[ ('contains_url',None) ] = 1
+        if any([ w and w[0]=='@'     for w in phrase]):
+            features[ ('contains_@'  ,None) ] = 1
+        if any([ w and w[0] == '#'   for w in phrase]):
+            features[ ('contains_#'  ,None) ] = 1
+
+
+
         # Features: Misc position data
-        features['phrase'] = ' '.join(phrase)
         features['first_unigram'] = sentence[begin]
         features[ 'last_unigram'] = sentence[  end]
-        features['phrase_length'] = len(' '.join(sentence)) / 140.0
+        features['phrase_length'] = len(phrase) / 2.0
         features['is_first'] = (begin == 0)
         features['is_last'] = (end == len(sentence)-1)
 
 
         # Feature: Whether every word is a stop word
-        if all([ (len(tok) == 0) for tok in normalized[begin:end+1]]):
-            features['all_stopwords'] = 1
+        if all([ tok in utilities.stop_words for tok in phrase]):
+            #print phrase
+            features[ ('all_stopwords',None) ] = 1
 
 
         # Feature: All Caps? (boolean)
-        if re.search('^[A-Z\\?!]*[A-Z][A-Z\\?!]*$',''.join(phrase)):
+        if re.search('^[^a-z]*[A-Z][A-Z][^a-z]$',''.join(phrase)):
             features[ ('all_caps',None) ] = 1
+
+
+        # Feature: All Punctuation?
+        if re.search('^[^a-zA-Z0-9]+$',''.join(phrase)):
+            features[ ('all_punct',None) ] = 1
 
 
         # Feature: Emoticon Counts
         elabels = defaultdict(lambda:0)
-        for word in phrase:
+        for word in norm_context:
             elabel = emoticons.emoticon_type(word)
             if elabel:
                 elabels[elabel] += 1
@@ -251,46 +311,56 @@ class FeaturesWrapper:
 
 
         # Feature: Punctuation counts
-        punct = {'!':0, '?':0}
-        for c in ''.join(phrase):
+        punct = {'!':0, '?':0, '.':0}
+        for c in ''.join(context):
             if c in punct: punct[c] += 1
         for k,v in punct.items():
             featname = k + '-count'
             features[featname] = v
 
 
+        # Features: character streaks
+        text = ''.join(phrase)
+
+        #  !-streak
+        matches = re.findall('!+',text)
+        if matches:
+            features['!-streak'] = max([len(w) for w in matches])
+
+        #  ?-streak
+        matches = re.findall('\\?+',text)
+        if matches:
+            features['?-streak'] = max([len(w) for w in matches])
+
+        # ?!-streak
+        matches = re.findall('[!\\?]+',text)
+        if matches:
+            features['?!-streak'] = max([len(w) for w in matches])
+
+
         # Feature: Contains elongated long word? (boolean)
         contains_elongated_word = False
-        for words in normalized:
-            for word in words:
-                if utilities.is_elongated_word(word):
-                    contains_elongated_word = True
-        features[ ('contains_elongated_word',contains_elongated_word) ] = 1
+        for word in phrase:
+            if utilities.is_elongated_word(word):
+                contains_elongated_word = True
+        if contains_elongated_word:
+            features[ ('contains_elongated_word',None) ] = 1
 
 
         # Feature: Contains long word? (boolean)
-        long_word_threshold = 8
+        long_word_threshold = 10
         contains_long_word = False
-        for words in normalized:
+        for words in normalized[begin:end+1]:
             for word in words:
+                if word[-4:]=='_neg': word = word[:-4]
+                word = spell.remove_duplicates(word)
+                if len(word) and word[0]=='#': continue
+                word = word.strip(string.punctuation)
                 if len(word) > long_word_threshold:
                     contains_long_word = True
-        features[ ('contains_long_word',contains_long_word) ] = 1
+        if contains_long_word:
+            features[ ('contains_long_word',None) ] = 1
 
-
-        # Feature: Contains elongated long punctuation? (boolean)
-        contains_elongated_punc = False
-        for words in normalized:
-            for word in words:
-                if utilities.is_elongated_punctuation(word):
-                    contains_elongated_punc = True
-        features[ ('contains_elongated_punc',contains_elongated_punc) ] = 1
-
-
-        # Officially removed: 
-        #  1. character prefixes and suffixes
-        #  2. whether every word begins with a captial letter
-        #  3. bigrams and trigrams (from normalized phrase)
 
 
         return features

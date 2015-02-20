@@ -14,7 +14,7 @@ from collections import defaultdict
 
 import note
 
-from nltk.corpus import wordnet as wn   
+from nltk.corpus import wordnet as wn
 import nltk.stem
 import Queue
 
@@ -136,24 +136,17 @@ class FeaturesWrapper:
         phrase = utilities.tokenize(tweet, self.ark_tweet)
 
 
-
+        '''
         # Feature: Unedited Unigram Tokens
         for tok in phrase:
             if tok == '': continue
             if tf_idf.doc_freq(tok) < MIN_COUNT: continue
             if tok in tf_idf.stop_words:         continue
             features[('unedited-uni-tok',tok)] = 1
-
+        '''
 
         # Edit misspellings
         unis = self.speller.correct_spelling(phrase, pos)
-
-        p = False
-        for t in unis: 
-            if ' ' in t:
-                p = True
-        #if p:
-        #    print unis
 
         # Flatten from multi-word tokens
         flattened = []
@@ -162,7 +155,7 @@ class FeaturesWrapper:
             for w in tok.split():
                 flattened.append(w)
                 flat_pos.append(tag)
-  
+
         # Normalize sentence
         normalized = utilities.normalize_phrase_TaskB(flattened)
 
@@ -171,7 +164,6 @@ class FeaturesWrapper:
         uni_freqs = defaultdict(lambda:0)
         for i,word in enumerate(normalized):
 
-            #if p: print word, flat_pos[i]
             if word == '': continue
             w = word if (word[-4:]!='_neg') else word[:-4]
             if tf_idf.doc_freq(w) < MIN_COUNT: continue
@@ -183,11 +175,9 @@ class FeaturesWrapper:
                 if flat_pos[i] == 'Z': continue
                 if flat_pos[i] == 'P': continue
                 if flat_pos[i] == 'O': continue
-                #if p: print ''
                 uni_freqs[word] += 1
             else:
                 uni_freqs[word] += 1
-        #if p: print '\n\n'
 
         feats = defaultdict(lambda:0)
         for key,tf in uni_freqs.items():
@@ -197,10 +187,42 @@ class FeaturesWrapper:
                 score = -1
             else:
                 score = 1
-            feats[('uni_tok'     ,        word) ] += score
+            #feats[('uni_tok'     ,        word) ] += score
             feats[('uni_stem_tok',st.stem(word))] += score
         features.update(feats)
 
+        return features
+
+        #'''
+        # Feature: Split hashtag
+        if enabled_modules['hashtag']:
+            hashtags = [ w for w in normalized if len(w) and (w[0]=='#') ]
+            for ht in hashtags:
+                toks = hashtag.split_hashtag(ht)
+                if (ht not in seen) and (ht not in hashtag.annotations):
+                    seen.add(ht)
+                    #print ht, '\t', toks
+                for tok in utilities.normalize_phrase_TaskB(toks):
+                    if tok[-4:] == '_neg':
+                        tok = tok[:-4]
+                        score = -1
+                    else:
+                        score = 1
+                    if len(tok) > 2:
+                        if tf_idf.doc_freq(tok) < MIN_COUNT: continue
+                        if tok in tf_idf.stop_words:         continue
+                        ###features[('uni_tok'     ,        tok) ] = score
+                        features[('uni_stem_tok',st.stem(tok))] = score
+        #'''
+
+        #return features
+
+        # Feature: Lexicon Features
+        if enabled_modules['lexicons']:
+            feats = lexicon_features(normalized)
+            features.update(feats)
+
+        return features
 
         # Feature: Punctuation counts
         for c in '!?':
@@ -238,41 +260,6 @@ class FeaturesWrapper:
                 features[featname] = v
 
 
-        #'''
-        # Feature: Split hashtag
-        if enabled_modules['hashtag']:
-            hashtags = [ w for w in normalized if len(w) and (w[0]=='#') ]
-            for ht in hashtags:
-                toks = hashtag.split_hashtag(ht)
-                if (ht not in seen) and (ht not in hashtag.annotations):
-                    seen.add(ht)
-                    #print ht, '\t', toks
-                for tok in utilities.normalize_phrase_TaskB(toks):
-                    if tok[-4:] == '_neg':
-                        tok = tok[:-4]
-                        score = -1
-                    else:
-                        score = 1
-                    if len(tok) > 2:
-                        if tf_idf.doc_freq(tok) < MIN_COUNT: continue
-                        if tok in tf_idf.stop_words:         continue
-                        features[('uni_tok'     ,        tok) ] = score
-                        features[('uni_stem_tok',st.stem(tok))] = score
-        #'''
-
-
-        # Feature: Lexicon Features
-        if enabled_modules['lexicons']:
-            feats = lexicon_features(normalized)
-            features.update(feats)
-            if p:
-                pass
-                #print normalized
-                #for k,v in sorted(feats.items()):
-                #    print '\t', k, '\t', v
-                #print
-
-
         # Features: contains twitter-specific features (hashtags & mentions)
         contains_hashtag = False
         contains_mention = False
@@ -284,17 +271,6 @@ class FeaturesWrapper:
         if contains_mention: features['contains_mention'] = 1
 
 
-        '''
-        if p: print unis
-        for k,v in features.items():
-            if p: 
-                print k, '\t', v
-
-        if p: print
-
-
-        #exit()
-        '''
         return features
 
 
@@ -310,14 +286,14 @@ class FeaturesWrapper:
             if any(tf_idf.doc_freq(w) < MIN_COUNT for w in bigram): continue
             if any(w in tf_idf.stop_words         for w in bigram): continue
 
-            # context 
+            # context
             t1,t2 = bigram
-            if t1[-4:] == '_neg': 
+            if t1[-4:] == '_neg':
                 t1 = t1[:-4]
                 score = -1
             else:
                 score = 1
-            if t2[-4:] == '_neg': 
+            if t2[-4:] == '_neg':
                 t2 = t2[:-4]
 
             sbigram = (st.stem(t1),st.stem(t2))
@@ -333,14 +309,14 @@ class FeaturesWrapper:
             if any(tf_idf.doc_freq(phrase[i]) < MIN_COUNT for w in range(3)): continue
             if phrase[i] in tf_idf.stop_words:      continue
             t1,t2,t3 = trigram
-            if t1[-4:] == '_neg': 
+            if t1[-4:] == '_neg':
                 t1 = t1[:-4]
                 score = -1
             else:
                 score = 1
-            if t2[-4:] == '_neg': 
+            if t2[-4:] == '_neg':
                 t2 = t2[:-4]
-            if t3[-4:] == '_neg': 
+            if t3[-4:] == '_neg':
                 t3 = t3[:-4]
 
             features[('trigram_tok',trigram)] = 1
@@ -369,7 +345,7 @@ class FeaturesWrapper:
 
 
         '''
- 
+
 
         if enabled_modules['ukb_wsd'] and enabled_modules['ark_tweet']:
             #add ukb wsd features
@@ -379,7 +355,7 @@ class FeaturesWrapper:
                 #print tweet
                 wordSenses = self.ukb.ukb_wsd( phrase , self.ark_tweet.posTags( tweet ) )
                 self.ukb.cache.add_map( tweet , wordSenses )
-                
+
             for ws in wordSenses:
                 for s in ws:
                     if ('wsd',s[0]) in features.keys():

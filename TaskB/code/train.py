@@ -147,19 +147,8 @@ def train_vectorized(feats, Y, model_path=None, grid=False):
     Y = np.array( labels )
 
     # Vectorize feature dictionary
-    # NOTE: import to fit() during training
     vec = DictVectorizer()
-    #XNotNormalized = vec.fit_transform(feats)
     X = vec.fit_transform(feats)
-    #print 'first: ', type(XNotNormalized.todense().view(type=np.ndarray))
-    #print 'first: ', type(XNotNormalized.toarray())
-    #print XNotNormalized.size
-    #X = normalize_data_matrix(XNotNormalized)
-    #XNotNormalized = np.ones((100,200))
-    #print 'second: ', type(XNotNormalized)
-    #print 'start norm'
-    #X = csr_matrix( normalize_data_matrix(XNotNormalized.toarray()) )
-    #print 'done norm'
     norm_mat( X , axis=0 , copy=False)
 
     # Grid Search

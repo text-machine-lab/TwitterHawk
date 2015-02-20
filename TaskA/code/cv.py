@@ -99,64 +99,37 @@ def main():
     # Instantiate feat obj once (it'd really slow down CV to rebuild every time)
     feat_obj = FeaturesWrapper()
 
+
+    # Extract features once
+    feats = train.extract_features(X, feat_obj)
+    data = zip(feats,Y)[:length]
+
+    print len(data)
+
     # For each held-out test set
-    if args.grid:
+    i = 1
+    for training,testing in cv_partitions(data,num_folds=num_folds,shuffle=args.random):
 
-        data = zip(X,Y)
-
-        # Parition data
-        pivot = int(.75 * len(data[:length]))
-        training = data[:pivot ]
-        testing  = data[ pivot:]
+        # Users like to see progress
+        print 'Fold: %d of %d' % (i,num_folds)
+        i += 1
 
         # Train on non-heldout data
-        X_train = [ (d[0],d[1]) for d in training ]
-        Y_train = [  d[2]       for d in training ]
-        vec,clf = train.train(X_train, Y_train, model_path=None, grid=args.grid, feat_obj=feat_obj)
+        X_train = [ d[0] for d in training ]
+        Y_train = [ d[1] for d in training ]
+        vec,clf= train.train_vectorized(X_train, Y_train, model_path=None, grid=False)
 
         # Predict on held out
-        X_test = [ (d[0],d[1]) for d in testing ]
-        Y_test = [  d[2]       for d in testing ]
-        labels = predict.predict(X_test, clf, vec, feat_obj=feat_obj)
+        X_test = [ d[0] for d in testing ]
+        Y_test = [ d[1] for d in testing ]
+        labels,confs = predict.predict_vectorized(X_test, clf, vec)
 
         # Compute confusion matrix for held_out data
-        testing_confusion = evaluate.create_confusion(labels, Y_test)
+        testing_confusion = evaluate.create_confusion(Y_test, labels)
         confusion = add_matrix(confusion, testing_confusion)
 
-        # Evaluate
-        evaluate.display_confusion(confusion)
-
-    else:
-
-        # Extract features once
-        feats = train.extract_features(X, feat_obj)
-        data = zip(feats,Y)[:length]
-
-        print len(data)
-
-        i = 1
-        for training,testing in cv_partitions(data,num_folds=num_folds,shuffle=args.random):
-
-            # Users like to see progress
-            print 'Fold: %d of %d' % (i,num_folds)
-            i += 1
-
-            # Train on non-heldout data
-            X_train = [ d[0] for d in training ]
-            Y_train = [ d[1] for d in training ]
-            vec,clf= train.train_vectorized(X_train, Y_train, model_path=None, grid=False)
-
-            # Predict on held out
-            X_test = [ d[0] for d in testing ]
-            Y_test = [ d[1] for d in testing ]
-            labels = predict.predict_vectorized(X_test, clf, vec)
-
-            # Compute confusion matrix for held_out data
-            testing_confusion = evaluate.create_confusion(Y_test, labels)
-            confusion = add_matrix(confusion, testing_confusion)
-
-        # Evaluate
-        evaluate.display_confusion(confusion)
+    # Evaluate
+    evaluate.display_confusion(confusion)
 
 
 

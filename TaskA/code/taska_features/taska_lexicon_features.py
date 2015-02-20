@@ -20,28 +20,59 @@ if sources not in sys.path: sys.path.append(sources)
 # If enabled, build all lexicons
 from common_lib.read_config import enabled_modules
 if enabled_modules['lexicons']:
-    from common_lib.common_lexicons.lexicons import lexHTS
-    from common_lib.common_lexicons.lexicons import lexS140
-    from common_lib.common_lexicons.lexicons import lexSubj
     from common_lib.common_lexicons.lexicons import lexOpi
+    from common_lib.common_lexicons.lexicons import lexSubj
     from common_lib.common_lexicons.lexicons import lexEmo
     from common_lib.common_lexicons.lexicons import lexAff
-    from common_lib.common_lexicons.lexicons import lexClus
+    from common_lib.common_lexicons.lexicons import lexHTS
+    from common_lib.common_lexicons.lexicons import lexS140
     from common_lib.common_lexicons.lexicons import lexInq
 
-from common_lib.common_features.utilities import normalize_phrase_TaskA
+    #from common_lib.common_lexicons.lexicons import lexClus
 
+from common_lib.common_features.utilities import normalize_phrase_TaskA, is_elongated_word
+
+
+
+
+# Common spelling abbreviations and mistakes
+common = {}
+abbrevs = os.path.join('/data1/nlp-data/twitter/tools/spell/abbrv.txt')
+with open(abbrevs,'r') as f:
+    for line in f.readlines():
+        if line == '\n': continue
+        abbrev,full = tuple(line.strip('\n').split(' || '))
+        common[abbrev] = full
 
 
 def light_normalize(sentence, begin, end, ark_tweet):
 
     # Normalize phrase
-    normalized = normalize_phrase_TaskA(sentence, ark_tweet, stem=False)
+    normalized = normalize_phrase_TaskA(sentence, ark_tweet)
 
     # Get given phrase
-    phrase = [ w for words in normalized[begin:end] for w in words ]
+    phrase = [ w.lower() for words in normalized[begin:end] for w in words ]
 
-    return [  word.lower()  for  word  in  phrase  ]
+    # Common spelling mistakes
+    retVal = []
+    for t in phrase:
+        if t == '': continue
+
+        negated = ('_neg' in t)
+        if negated: t = t[:-4]
+
+        key = t.strip(string.punctuation)
+        if key in common:
+            abbrv = common[key].split()
+            if negated: abbrv = [ w+'_neg' for w in abbrv ]
+            retVal += abbrv
+        else:
+            if negated: key += '_neg'
+            retVal.append(key)
+            if t[0] == '#': retVal.append(t)
+    phrase = retVal
+
+    return phrase
 
 
 
@@ -81,6 +112,10 @@ def scores_to_features(scores, lexName, featName):
     # num_of_positive, max_score, last_positive
     features[('positive_count', (lexName,featName))]  =  len(pos_scores)
     features[('max'           , (lexName,featName))]  =  max(    scores)
+
+    #for i,s in enumerate(k_most_influential(scores,3)):
+    #    features[('%d-most-influential'%i,(lexName,featName))] = s
+
     if len(pos_scores):
         features[('last_posit', (lexName,featName))]  =   pos_scores[-1]
 
@@ -88,10 +123,9 @@ def scores_to_features(scores, lexName, featName):
 
 
 def context_lookup(lookup_fcn, w):
-    """ Attempt to do proper lookup. Actually does worse """
-    #negated = -0.3 if (w[-4:] == '_neg') else 1
-    #w = w[:-4]
-    score = lookup_fcn(w) # * negated
+    negated = -1 if (w[-4:] == '_neg') else 1
+    if w[-4:] == '_neg': w = w[:-4]
+    score = lookup_fcn(w) * negated
     return score
 
 
@@ -100,15 +134,22 @@ def opinion_lexicon_features(phrase):
 
     features = {}
 
-    # TODO - Maybe do % positive, rather than num_positive
     # Count number of positive, negative, and neutral labels there are
     Opi_sentiments = defaultdict(lambda:0)
     for word in phrase:
+        negated = ('_neg' in word)
+        if negated: word = word[:-4]
         label = lexOpi.lookup(word)
         if label != 'neutral':
+            if negated:
+                if label == 'positive':
+                    label = 'negative'
+                else:
+                    label = 'positive'
             Opi_sentiments[label] += 1
+
     for sentiment,count in Opi_sentiments.items():
-        if sentiment ==        '': continue
+        if sentiment == '': continue
         features[ ('Opi-count', sentiment) ] = count
 
     return features
@@ -122,18 +163,25 @@ def subjectivity_lexicon_features(phrase):
 
     # FIXME - MUST disambiguate POS
     # Feature Subjectivity Classification
-    #print '\n\n'
-    #print phrase
     Subj_sentiments = defaultdict(lambda:0)
     for word in phrase:
+        negated = ('_neg' in word)
+        if negated: word = word[:-4]
+
         entry = lexSubj.lookup(word)
-        #print '\t', word, '\t\t\t', entry
         if entry.prior != '':
             label = (entry.type, entry.prior)   # ex. ('strongsub','positive')
+
+            if negated:
+                if   label[1] == 'positive':
+                    label = ('weaksubj','negative')
+                elif label[1] == 'negative':
+                    label = ('weaksubj','positive')
+
             Subj_sentiments[label] += 1
+
     for sentiment,count in Subj_sentiments.items():
-        #print 'feat: ', 'Subj-%s-%s_count' % sentiment, '\t\t', count
-        features[ ('Subj-%s-%s_count', sentiment) ] = count
+        features[ ('Subj-%s-%s_count' % sentiment) ] = count
 
     return features
 
@@ -147,7 +195,12 @@ def emotion_lexicon_features(phrase):
         context = (w[-4:] == '_neg')
         if context: w = w[:-4]
         senti = lexEmo.lookup(w)
-        lexEmo_uni_scores[senti[0], context].append( senti[1] )
+        if context:
+            score = -senti[1]
+        else:
+            score =  senti[1]
+
+        lexEmo_uni_scores[senti[0]].append( score )
 
     # Get features for each kind of emotion
     features = {}
@@ -163,8 +216,14 @@ def affin_lexicon_features(phrase):
     # Add Affin Features
     scores = []
     for word in phrase:
+        negated = ('_neg' in word)
+        if negated: word = word[:-4]
+
         score = lexAff.score(word)
-        if score != None: scores.append(score)
+        if score != None:
+            if negated: score = 0
+            scores.append(score)
+
     return scores_to_features(scores, 'Affin', 'score')
 
 
@@ -175,10 +234,12 @@ def brown_cluster_features(phrase):
 
     # Add Brown Cluster Features
     lastCluster = None
+    clusters = []
     for word in phrase:
         context = (word[-4:] == '_neg')
         if context: word = word[:-4]
         wordCluster = lexClus.getCluster(word)
+        clusters.append(wordCluster)
         if wordCluster != None:
             features[('Cluster-count',(context,wordCluster))] += 1
             lastCluster = wordCluster
@@ -199,12 +260,17 @@ def general_inquirer_features(phrase):
     tagDict = defaultdict(lambda:0)
     for word in phrase:
         #print word
+        negated = ('_neg' in word)
+        if negated: word = word[:-4]
+
+        weight = 1 if not negated else 0
+
         wordTags = lexInq.getTags(word)
         #print 'wordTags: ', wordTags
         if wordTags != None:
             for tag in wordTags:
                 #print '\t', tag
-                tagDict[tag] += 1
+                tagDict[tag] += weight
             lastTags = wordTags
         #print
     #print 'tagDict: ', tagDict
@@ -298,35 +364,29 @@ def lexicon_features(sentence, begin, end, ark_tweet=None):
     # Light normalization
     phrase = light_normalize(sentence, begin, end, ark_tweet)
 
-    #print sentence
-    #print sentence[begin:end]
-    #print phrase
-    #print 
 
     # Aplly all twitter-specfic lexicons
     features.update(   opinion_lexicon_features(phrase)                  )
     features.update( sentiment_lexicon_features(phrase,  'HTS', lexHTS ) )
     features.update( sentiment_lexicon_features(phrase, 'S140', lexS140) )
-    features.update(   emotion_lexicon_features(phrase)                  )
 
     # Not including will boost results
     #features.update(     brown_cluster_features(phrase)                  )
 
-
-    # Heavier normalization (ex. spell correct & hashtag split)
-    #phrase = heavy_normalize(sentence)
-
     # Apply all general-purpose lexicons
     features.update( subjectivity_lexicon_features(phrase)                  )
 
-    # Not including will boost results
-    #features.update(        affin_lexicon_features(phrase)                  )
-    #features.update(     general_inquirer_features(phrase)                  )
+    features.update(        affin_lexicon_features(phrase)                  )
+
+
+
+    features.update(   emotion_lexicon_features(phrase)                  )
+    features.update(     general_inquirer_features(phrase)                  )
 
     #if features:
     #    print phrase
     #    print features
     #    print '\n\n'
 
-    return features
+    return { k:v for k,v in features.items() if v }
 

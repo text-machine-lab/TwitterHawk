@@ -111,14 +111,14 @@ def split_stream(word):
             s += len(num)
             e += len(num)
             continue
-        
+
         sub = word[s:e+1]
 
         # Longest legal word so far
         if sub in _dictionary:
             longest = sub
             lind = e
-        
+
         # No more possible legal words
         if not _dictionary.isPrefix(sub):
             if longest != None:

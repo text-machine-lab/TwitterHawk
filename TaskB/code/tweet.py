@@ -15,7 +15,8 @@ class BadTweetException(Exception):
 
 class Tweet:
 
-    labels_list = frozenset( ['positive', 'negative', 'neutral'] )
+    #labels_list = frozenset( ['positive', 'negative', 'neutral'] )
+    labels_list = frozenset( ['positive', 'negative', 'neutral', 'unknwn'] )
 
 
     # Constructor

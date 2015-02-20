@@ -57,11 +57,11 @@ def max0(lst):
     return max(lst)
 
 
-def average(lst): 
+def average(lst):
     return sum(lst) / (len(lst) + 1e-5)
 
 
-def is_positive(score): 
+def is_positive(score):
     return score > 0
 
 
@@ -69,7 +69,7 @@ def scores_to_features(scores, lexName, featName):
     features = {}
 
     # Three most influential sentiments (AKA scores with largest abs value)
-    #influential = k_most_influential(scores, 3)
+    influential = k_most_influential(scores, 3)
     #
     # Add influential scores to feature dict
     #for i,score in enumerate(influential):
@@ -109,7 +109,7 @@ def opinion_lexicon_features(phrase):
     return features
 
 
-    
+
 
 def subjectivity_lexicon_features(phrase):
 
@@ -210,14 +210,14 @@ def general_inquirer_features(phrase):
     lastTags = None
     #tagDict = lexInq.getBlankDict()
     for word in phrase:
-        #print word
+        print word
         wordTags = lexInq.getTags(word)
         if wordTags != None:
             for tag in wordTags:
-                #print '\t', tag
+                print '\t', tag
                 tagDict[tag] += 1
             lastTags = wordTags
-        #print
+        print
     for key in tagDict:
         if tagDict[key] > 0:
             features[('Tag-count',key)] = tagDict[key]

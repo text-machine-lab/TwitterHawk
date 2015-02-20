@@ -45,8 +45,8 @@ def main():
     parser.add_argument("-t",
         dest = "txt",
         help = "The files that contain the training examples",
-        #default = os.path.join(BASE_DIR, 'data/train-cleansed-A.txt')
-        default = os.path.join(BASE_DIR, 'data/sample.txt')
+        default = os.path.join(BASE_DIR, 'data/train-cleansed-A.txt')
+        #default = os.path.join(BASE_DIR, 'data/sample.txt')
     )
 
     parser.add_argument("-m",
@@ -150,7 +150,7 @@ def train_vectorized(X, Y, model_path=None, grid=False):
         clf = do_grid_search(X, Y)
     else:
         #clf = LogisticRegression(C=1000.0)
-        clf = LinearSVC(C=0.1)
+        clf = LinearSVC(C=0.05)
         #clf = svm.SVC(C=0.1, gamma=10.0)
         #clf = SGDClassifier(penalty='elasticnet',alpha=0.001, l1_ratio=0.85, n_iter=1000,class_weight='auto')
         clf.fit(X, Y)

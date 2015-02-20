@@ -67,32 +67,50 @@ def main():
         note.read(txt_file)
         X = zip(note.getIDs(),note.getTweets())
 
-        labels = predict_using_model(txt_files, model_path, out_dir)
+        labels,confidences = predict_using_model(X, model_path, out_dir)
+
+        '''
+        # Confident predictions
+        labels_map = {'positive':0, 'negative':1, 'neutral':2}
+        proxy = []
+        for t,l,c in zip(note.getTweets(),labels,confidences):
+            conf = []
+            for i in range(len(labels_map)):
+                if i == labels_map[l]: continue
+                conf.append( c[labels_map[l]] - c[i] )
+            avg = sum(conf) / len(conf)
+            start,end,tweet = t
+            if avg > 1:
+                #print tweet[start:end+1]
+                #print l
+                #print c
+                #print
+                #proxy.append(l)
+                proxy.append('poop')
+            else:
+                print 'not conf'
+                print tweet[start:end+1]
+                print l
+                print c
+                print
+                proxy.append(l)
+                #proxy.append('poop')
+        '''
+
 
         # output predictions
         outfile  = os.path.join(out_dir, os.path.basename(txt_file))
         note.write( outfile, labels )
+        #note.write( outfile, proxy )
 
-
-
-# Global variables (in case outside module repeatedly queries predict_using_model
-clf = None
-vec = None
-feat_obj = None
 
 def predict_using_model(X, model_path, out_dir):
 
-    global clf,vec, feat_obj
-
-    # Load model
-    if clf == None:
-        with open(model_path+'.model', 'rb') as fid:
-            clf = pickle.load(fid)
-    if vec == None:
-        with open(model_path+'.dict', 'rb') as fid:
-            vec = pickle.load(fid)
-    if feat_obj == None:
-        feat_obj = FeaturesWrapper()
+    with open(model_path+'.model', 'rb') as fid:
+        clf = pickle.load(fid)
+    with open(model_path+'.dict', 'rb') as fid:
+        vec = pickle.load(fid)
+    feat_obj = FeaturesWrapper()
 
     # Predict
     labels = predict( X, clf, vec, feat_obj=feat_obj )
@@ -123,8 +141,9 @@ def predict_vectorized(X, clf, vec):
     # predict
     labels = clf.predict(vectorized)
     labels = [ reverse_labels_map[y] for y in labels ]
+    confidences = clf.decision_function(vectorized)
 
-    return labels
+    return labels,confidences
 
 
 

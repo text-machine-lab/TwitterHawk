@@ -16,7 +16,8 @@ class BadTweetException(Exception):
 class Tweet:
 
     #labels_list = frozenset( ['positive', 'negative', 'neutral', 'objective'] )
-    labels_list = frozenset( ['positive', 'negative', 'neutral'] )
+    #labels_list = frozenset( ['positive', 'negative', 'neutral'] )
+    labels_list = frozenset( ['positive', 'negative', 'neutral', 'unknwn'] )
     #labels_list = frozenset( ['positive', 'negative'] )
 
 
@@ -46,9 +47,8 @@ class Tweet:
         self.label = words[4]
 
         # Robust against case where tweet actually contains tab character
-        self.sent = []
-        for segment in words[5:]:
-            self.sent += segment.split(' ')
+        text = '\t'.join(words[5:]).strip('\n').replace('\t',' ')
+        self.sent = text.split(' ')
 
 
         # Remove "Not Available" tweets

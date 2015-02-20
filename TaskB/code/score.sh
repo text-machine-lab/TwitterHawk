@@ -1,2 +1,2 @@
-python train.py -t ../data/2013-train-dev.txt
+python train.py -t ../data/twitter-train-cleansed-B.tsv
 python test.py

@@ -24,8 +24,12 @@ from common_lib.common_lexicons import emoticons
 
 
 # Negative words
-neg_words  = frozenset(['no', 'not', 'none', 'nobody', 'nothing', 
-                        'nowhere', 'never', 'neither'])
+neg_words  = frozenset(['no', 'not', 'none', 'nobody', 'nothing',
+                        'nowhere', 'never', 'neither', 'noone', 'havent',
+                        'hasnt', 'hadnt', 'cant', 'couldnt', 'shouldnt',
+                        'wont', 'wouldnt', 'dont', 'doesnt', 'didnt',
+                        'isnt', 'arent', 'aint'])
+
 
 # Stop words
 stop_words = set()
@@ -342,6 +346,7 @@ def is_elongated_punctuation(word):
     # If same letter repeated three times
     for i in range(len(word)-2):
         if word[i].isalpha(): continue
+        if word[i] == '.': continue
         # This syntax for triple equality is allowed in Python
         if word[i] == word[i+1] == word[i+2]:
             return True
