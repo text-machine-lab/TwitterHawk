@@ -32,14 +32,8 @@ from sklearn.preprocessing import normalize as norm_mat
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
-"""
-import sys
-sys.path.append(os.getenv('BISCUIT_DIR'))
-from common_lib.common_features.utilities import normalize_data_matrix
-from scipy.sparse import csr_matrix
-"""
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def main():

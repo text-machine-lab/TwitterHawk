@@ -12,7 +12,9 @@ import argparse
 import cPickle as pickle
 
 import sys
-sys.path.append(os.getenv('BISCUIT_DIR'))
+back = os.path.dirname
+base = back(back(back(os.path.abspath(__file__))))
+sys.path.append( base )
 from common_lib.common_features.utilities import normalize_data_matrix
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import normalize as norm_mat
@@ -22,7 +24,7 @@ from model import reverse_labels_map
 from note import Note
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
+BASE_DIR = os.path.join(base,'TaskB')
 
 
 def main():
@@ -61,7 +63,7 @@ def main():
     # Available data
     if not txt_files:
         print 'no predicting files :('
-        exit(1) 
+        exit(1)
 
 
     # Load model
@@ -97,7 +99,7 @@ def predict(X, clf, vec, feat_obj=None):
 
     #'''
     # Data -> features
-    if feat_obj == None: 
+    if feat_obj == None:
         feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
     #'''

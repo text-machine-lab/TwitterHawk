@@ -13,7 +13,8 @@ from collections import defaultdict
 
 
 # Add common-lib code to system path
-sources = os.getenv('BISCUIT_DIR')
+back = os.path.dirname
+sources = back(back(back(back(os.path.abspath(__file__)))))
 if sources not in sys.path: sys.path.append(sources)
 
 

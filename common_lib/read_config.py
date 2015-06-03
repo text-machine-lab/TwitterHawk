@@ -13,18 +13,20 @@ import os
 
 
 # Open config file
-filename = os.path.join( os.getenv('BISCUIT_DIR'), 'config.txt' )
-f = open(filename, 'r')
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+filename = os.path.join( base_dir, 'config.txt' )
 
 
 enabled_modules = {}
 module_list = [ 'twitter_nlp', 'twitter_data', 'lexicons', 'hashtag', 'url', 'caches', 'ark_tweet', 'ukb_wsd' ]
 
-for line in f.readlines():
-    words = line.split()
-    if words:
-        if words[0] in module_list:
-            if words[1] == 'None':
-                enabled_modules[words[0]] = None
-            else:
-                enabled_modules[words[0]] = words[1]
+with open(filename, 'r') as f:
+
+    for line in f.readlines():
+        words = line.split()
+        if words:
+            if words[0] in module_list:
+                if words[1] == 'None':
+                    enabled_modules[words[0]] = None
+                else:
+                    enabled_modules[words[0]] = words[1]

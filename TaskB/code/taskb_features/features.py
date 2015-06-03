@@ -26,7 +26,8 @@ import spell
 
 
 # Add common-lib code to system path
-sources = os.getenv('BISCUIT_DIR')
+back = os.path.dirname
+sources = back(back(back(back(os.path.abspath(__file__)))))
 if sources not in sys.path: sys.path.append(sources)
 from common_lib.read_config                  import enabled_modules
 from common_lib.common_lexicons              import emoticons
@@ -35,7 +36,6 @@ from common_lib.common_features              import hashtag
 from common_lib.common_features              import url
 from common_lib.common_features.ark_tweet    import ark_tweet
 from common_lib.common_features.twitter_data import twitter_data
-from common_lib.common_features.ukb          import ukb_wsd
 
 
 st = nltk.stem.PorterStemmer()
@@ -73,8 +73,6 @@ class FeaturesWrapper:
         # Spelling correction
         self.speller = spell.SpellChecker()
 
-        if enabled_modules['ukb_wsd']:
-            self.ukb = ukb_wsd.ukbWSD()
 
 
 
@@ -149,12 +147,17 @@ class FeaturesWrapper:
         unis = self.speller.correct_spelling(phrase, pos)
 
         # Flatten from multi-word tokens
-        flattened = []
-        flat_pos = []
-        for tok,tag in zip(unis,pos):
-            for w in tok.split():
-                flattened.append(w)
-                flat_pos.append(tag)
+        if pos:
+            flattened = []
+            flat_pos = []
+            for tok,tag in zip(unis,pos):
+                for w in tok.split():
+                    flattened.append(w)
+                    flat_pos.append(tag)
+        else:
+            flattened = unis
+            flat_pos  = None
+
 
         # Normalize sentence
         normalized = utilities.normalize_phrase_TaskB(flattened)
@@ -346,28 +349,6 @@ class FeaturesWrapper:
 
         '''
 
-
-        if enabled_modules['ukb_wsd'] and enabled_modules['ark_tweet']:
-            #add ukb wsd features
-            if self.ukb.cache.has_key( tweet ):
-                wordSenses = self.ukb.cache.get_map( tweet )
-            else:
-                #print tweet
-                wordSenses = self.ukb.ukb_wsd( phrase , self.ark_tweet.posTags( tweet ) )
-                self.ukb.cache.add_map( tweet , wordSenses )
-
-            for ws in wordSenses:
-                for s in ws:
-                    if ('wsd',s[0]) in features.keys():
-                        features[('wsd',s[0])] += s[1]
-                    else:
-                        features[('wsd',s[0])] = s[1]
-
-
-        #print '\n\n\n'
-        #print tweet
-        #print
-        #print features
 
         return features
 

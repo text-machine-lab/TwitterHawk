@@ -19,7 +19,7 @@ import model
 from note import Note
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def main():

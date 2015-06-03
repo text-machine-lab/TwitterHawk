@@ -6,9 +6,11 @@
 # Author:      Willie Boag
 #-------------------------------------------------------------------------------
 
+from collections import defaultdict
+import os
+
 
 from tweet import Tweet, BadTweetException
-from collections import defaultdict
 
 
 class Note:
@@ -48,7 +50,13 @@ class Note:
                 except BadTweetException, e:
                     continue
 
+        # Display info about where data is coming from
+        if 'TwitterHawk' in txt:
+            print '\t\t', txt[txt.index('TwitterHawk')+12:]
+        else:
+            print '\t\t', txt
         print '\t\t', dict(labels)
+        print
 
 
 
