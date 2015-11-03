@@ -6,8 +6,8 @@
 #
 
 # Not implemented yet
-echo "Sorry. install.sh not implemented yet"
-exit
+#echo "Sorry. install.sh not implemented yet"
+#exit
 
 # Create virtual environment
 
@@ -18,4 +18,5 @@ pip install numpy scipy scikit-learn
 pip install nltk
 pip install BeautifulSoup
 pip install twitter
+pip install pyenchant
 

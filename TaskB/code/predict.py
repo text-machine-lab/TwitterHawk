@@ -16,8 +16,6 @@ back = os.path.dirname
 base = back(back(back(os.path.abspath(__file__))))
 sys.path.append( base )
 from common_lib.common_features.utilities import normalize_data_matrix
-from scipy.sparse import csr_matrix
-from sklearn.preprocessing import normalize as norm_mat
 
 from taskb_features.features import FeaturesWrapper
 from model import reverse_labels_map
@@ -92,11 +90,6 @@ def main():
 
 
 def predict(X, clf, vec, feat_obj=None):
-
-    """
-    predict()
-    """
-
     # Data -> features
     if feat_obj == None:
         feat_obj = FeaturesWrapper()
@@ -107,10 +100,8 @@ def predict(X, clf, vec, feat_obj=None):
 
 
 def predict_vectorized(feats, clf, vec):
-
     # Vectorize feature dictionary
     vectorized = vec.transform(feats)
-    norm_mat( vectorized , axis=0 , copy=False )
 
     labels = clf.predict(vectorized)
     labels = [ reverse_labels_map[y] for y in labels ]
