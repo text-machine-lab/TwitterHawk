@@ -15,20 +15,14 @@ from tweet import Tweet, BadTweetException
 
 class Note:
 
-
     def __init__(self):
-
         """
         Note::Constructor
         """
-
         self.tweets = []
 
 
-
-
     def read(self, txt):
-
         """
         Note::read()
 
@@ -36,9 +30,7 @@ class Note:
 
         Purpose: Read the file and store all tweets
         """
-
         labels = defaultdict(lambda:0)
-
         with open(txt) as f:
             for line in f:
                 # Ignore tweets that are ill-formatted
@@ -52,10 +44,10 @@ class Note:
 
         # Display info about where data is coming from
         if 'TwitterHawk' in txt:
-            print '\t\t', txt[txt.index('TwitterHawk')+12:]
+            print '\t\treading file: ', txt[txt.index('TwitterHawk')+12:]
         else:
-            print '\t\t', txt
-        print '\t\t', dict(labels)
+            print '\t\treading_file', txt
+        print '\t\tlabels count: ', dict(labels)
         print
 
 

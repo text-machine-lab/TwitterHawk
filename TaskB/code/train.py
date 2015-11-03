@@ -40,19 +40,20 @@ def main():
 
     parser.add_argument("-t",
         dest = "txt",
-        help = "The files that contain the training examples",
-        default = os.path.join(BASE_DIR, 'data/twitter-train-cleansed-B.tsv')
+        help = "Files that contain the training examples (e.g. data/demo.tsv)",
     )
 
     parser.add_argument("-m",
         dest = "model",
-        help = "The file to store the pickled model",
-        default = os.path.join(BASE_DIR, 'models/awesome')
+        help = "The file to store the pickled model (e.g. models/demo.model)",
     )
 
     # Parse the command line arguments
     args = parser.parse_args()
 
+    if (not args.txt) or (not args.model):
+        parser.print_help()
+        exit(1)
 
     # Decode arguments
     txt_files = glob.glob(args.txt)

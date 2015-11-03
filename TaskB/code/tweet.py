@@ -34,26 +34,23 @@ class Tweet:
 
         words = line.split('\t')
 
-
         if words == ['\n']: raise BadTweetException
-
 
         self.sid   = words[0]
         self.uid   = words[1]
         self.label = words[2]
         self.sent  = words[3].strip('\n')
 
-
         # Remove "Not Available" tweets
         if self.sent == 'Not Available':
-            raise BadTweetException
+            raise BadTweetException('text not provided')
 
         # Adjust if possible
         if self.label == 'objective-OR-neutral': self.label = 'neutral'
 
         # ensure legal label
         if self.label not in self.labels_list:
-            raise BadTweetException
+            raise BadTweetException('illegal label')
 
 
 

@@ -31,26 +31,26 @@ def main():
 
     parser.add_argument("-i",
         dest = "txt",
-        help = "The files to be predicted on",
-        default = os.path.join(BASE_DIR, 'data/twitter-test-gold-B.tsv')
+        help = "The files to be predicted on (e.g. data/demo.tsv)",
     )
 
     parser.add_argument("-m",
         dest = "model",
-        help = "The file to store the pickled model",
-        default = os.path.join(BASE_DIR, 'models/awesome')
+        help = "The file to store the pickled model (e.g. models/demo.model)",
     )
 
     parser.add_argument("-o",
         dest = "out",
-        help = "The directory to output predicted files",
-        default = os.path.join(BASE_DIR, 'data/predictions')
+        help = "The directory to output predicted files (e.g. data/predictions)",
     )
 
 
     # Parse the command line arguments
     args = parser.parse_args()
 
+    if (not args.txt) or (not args.model) or (not args.out):
+        parser.print_help()
+        exit(1)
 
     # Decode arguments
     txt_files  = glob.glob(args.txt)
