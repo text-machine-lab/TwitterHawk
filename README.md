@@ -33,6 +33,7 @@ Installation
     Install the ark_tweet_nlp project for tokenization of tweets
 
         - git clone https://github.com/ianozsvald/ark-tweet-nlp-python.git
+        - Set the config file to refer to the directory that you just cloned
 
 
 
