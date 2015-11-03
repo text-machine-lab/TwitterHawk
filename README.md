@@ -1,4 +1,4 @@
-Biscuit
+TwitterHawk
 =======
 
 Classifiers for SemEval 2015 Tasks.
