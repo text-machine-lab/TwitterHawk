@@ -27,6 +27,12 @@ Installation
 
     Must create a BISCUIT_DIR environment variable.
 
+        - Will hopefully be eliminated soon.
+
+
+    Install the ark_tweet_nlp project for tokenization of tweets
+
+        - git clone https://github.com/ianozsvald/ark-tweet-nlp-python.git
 
 
 
