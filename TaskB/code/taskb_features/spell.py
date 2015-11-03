@@ -53,7 +53,7 @@ class SpellChecker:
 
         # Memoized?
         key = tuple(phrase)
-        #if self.cache.has_key(key): 
+        #if self.cache.has_key(key):
         if False:
             return self.cache.get_map(key)
 
@@ -100,14 +100,17 @@ class SpellChecker:
             else:
 
                 # FIXME: do this during tokenization
-                if w[-2:] ==  "'s": w = w[:-2]
-                if w[-2:] ==  "'m": w = w[:-2]
-                if w[-3:] == "'ve": w = w[:-2]
-                if w[-3:] == "'ll": w = w[:-2]
+                cand = w
+                if w[-2:] ==  "'s": cand = w[:-2]
+                if w[-2:] ==  "'m": cand = w[:-2]
+                if w[-3:] == "'ve": cand = w[:-2]
+                if w[-3:] == "'ll": cand = w[:-2]
+                if len(cand): w = cand
 
                 # ends in exlamation mark context
                 exclamation = False
-                if re.search('^[^!]*!$',w): 
+                if re.search('^[^!]*!$',w):
+                    if _debug: '\tECLAMATION'
                     w = w.strip('!')
                     exclamation = True
 
@@ -154,13 +157,13 @@ class SpellChecker:
                     if _debug: print '\tCHECKING SUGGESTIONS'
 
                     #if not self.cache.has_key(w):
-                    if True: 
+                    if True:
 
                         # Run spell ccorrection
                         possible = self.d.suggest(w)
 
                         # If no matches, then use original
-                        if possible == []: 
+                        if possible == []:
                             possible = [w]
 
                         '''
@@ -181,7 +184,7 @@ class SpellChecker:
                     else:
                         possible = self.cache.get_map(w)
 
-                # trailing exclamation 
+                # trailing exclamation
                 if exclamation:
                     possible = [ w + ' !' for w in possible ]
 
@@ -192,7 +195,7 @@ class SpellChecker:
         #print
 
         # Select proper candidate
-        corrected = [ choices[0] for choices in cands ] 
+        corrected = [ choices[0] for choices in cands ]
 
         # memoize
         self.cache.add_map(key,corrected)

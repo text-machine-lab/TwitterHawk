@@ -17,7 +17,8 @@ from HTMLParser import HTMLParser
 
 
 # Add common-lib code to system path
-sources = os.getenv('BISCUIT_DIR')
+back = os.path.dirname
+sources = back(back(back(os.path.abspath(__file__))))
 if sources not in sys.path: sys.path.append(sources)
 
 from common_lib.cache import Cache
@@ -81,7 +82,7 @@ class ArkTweetNLP:
             partial = CMUTweetTagger.runtagger_parse(uncached)
             print 'partial: ', len(partial)
             for twt,tag in zip(uncached,partial):
-                print 'adding: ', twt
+                #print 'adding: ', twt
                 self.cache.add_map(twt, tag)
 
         # Lookup all tags
@@ -132,9 +133,9 @@ class ArkTweetNLP:
                 newTags.append(tag    )
 
             # Case: compouund word, separated with /
-            elif ( ('/' in tok)               and 
+            elif ( ('/' in tok)               and
                    (not is_url(tok))          and
-                   (len(tok.split('/')[0])>2) and 
+                   (len(tok.split('/')[0])>2) and
                    (len(tok.split('/')[1])>2)   ):
                 subs = tok.split('/')
                 newToks.append(subs[0])
@@ -158,7 +159,7 @@ class ArkTweetNLP:
             print oldToks
             print newToks
             print
-        
+
         return newToks,newTags
 
 
@@ -205,7 +206,7 @@ class ArkTweetNLP:
         twt = self.normalizeKey(twt)
 
         # Feature: POS counts
-        pos_counts = defaultdict(lambda:0)        
+        pos_counts = defaultdict(lambda:0)
         for pos in self._pos[twt]:
             if pos not in string.punctuation:
                 pos_counts[pos] += 1
@@ -259,7 +260,7 @@ def main():
 
     # Read data from file
     twts = [ line.split('\t')[3].strip('\n')  for  line  in  args.tweets.readlines() ]
-    
+
     # Run twitter_nlp on data
     t_nlp = ArkTweetNLP(twts)
 

@@ -22,7 +22,7 @@ import predict
 import evaluate
 
 
-BASE_DIR = os.path.join(os.getenv('BISCUIT_DIR'),'TaskB')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 
@@ -184,7 +184,7 @@ def add_matrix(A, B):
     Purpose: Element-wise sum of two matrices.
     """
 
-    if len(A) != len(B): 
+    if len(A) != len(B):
         raise Exception('Cannot add matrics of different dimensions')
 
     # Return value
@@ -195,10 +195,11 @@ def add_matrix(A, B):
         if len(a) != len(b):
             raise Exception('Cannot add matrics of different dimensions')
 
-        c = [ a_it+b_it for a_it,b_it in zip(a,b) ] 
+        c = [ a_it+b_it for a_it,b_it in zip(a,b) ]
         C.append(c)
 
     return C
+
 
 
 if __name__ == '__main__':

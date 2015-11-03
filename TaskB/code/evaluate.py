@@ -69,9 +69,8 @@ def main():
 
 
     ref_files = os.listdir(ref_directory)
-    ref_files = map(lambda f: os.path.join(args.ref, ref_directory, f), ref_files)
+    ref_files = map(lambda f: os.path.join(args.ref, f), ref_files)
     ref_files_map = helper.map_files(ref_files)
-
 
     files = []
     for k in txt_files_map:

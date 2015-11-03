@@ -33,9 +33,7 @@ from common_lib.read_config                  import enabled_modules
 from common_lib.common_lexicons              import emoticons
 from common_lib.common_features              import utilities
 from common_lib.common_features              import hashtag
-from common_lib.common_features              import url
 from common_lib.common_features.ark_tweet    import ark_tweet
-from common_lib.common_features.twitter_data import twitter_data
 
 
 st = nltk.stem.PorterStemmer()
@@ -58,14 +56,6 @@ class FeaturesWrapper:
             self.ark_tweet = ark_tweet.ArkTweetNLP()
         else:
             self.ark_tweet = None
-
-        # Lookup tweet metadata
-        if enabled_modules['twitter_data']:
-            self.twitter_data = twitter_data.TwitterData()
-
-        # Get HTML data from URLs in tweets
-        if enabled_modules['url']:
-            self.url = url.Url()
 
         # Count all token frequencies
         tf_idf._build_dictionary(self.ark_tweet, '/data1/nlp-data/twitter/data/etc/')
@@ -90,10 +80,6 @@ class FeaturesWrapper:
         # data   - A list of strings
         sids = [ x[0] for x in X ]
         data = [ x[1] for x in X ]
-
-        # Batch retrieval of twitter metadata
-        if enabled_modules['twitter_data']:
-            self.twitter_data.resolve(sids, data)
 
         # Remove weird characters
         #data = [ unicode(d.decode('utf-8')) for d in data ]
@@ -134,14 +120,14 @@ class FeaturesWrapper:
         phrase = utilities.tokenize(tweet, self.ark_tweet)
 
 
-        '''
+        #'''
         # Feature: Unedited Unigram Tokens
         for tok in phrase:
             if tok == '': continue
             if tf_idf.doc_freq(tok) < MIN_COUNT: continue
             if tok in tf_idf.stop_words:         continue
             features[('unedited-uni-tok',tok)] = 1
-        '''
+        #'''
 
         # Edit misspellings
         unis = self.speller.correct_spelling(phrase, pos)
@@ -190,11 +176,11 @@ class FeaturesWrapper:
                 score = -1
             else:
                 score = 1
-            #feats[('uni_tok'     ,        word) ] += score
+            feats[('uni_tok'     ,        word) ] += score
             feats[('uni_stem_tok',st.stem(word))] += score
         features.update(feats)
 
-        return features
+        #return features
 
         #'''
         # Feature: Split hashtag
@@ -214,7 +200,7 @@ class FeaturesWrapper:
                     if len(tok) > 2:
                         if tf_idf.doc_freq(tok) < MIN_COUNT: continue
                         if tok in tf_idf.stop_words:         continue
-                        ###features[('uni_tok'     ,        tok) ] = score
+                        features[('uni_tok'     ,        tok) ] = score
                         features[('uni_stem_tok',st.stem(tok))] = score
         #'''
 
@@ -225,7 +211,7 @@ class FeaturesWrapper:
             feats = lexicon_features(normalized)
             features.update(feats)
 
-        return features
+        #return features
 
         # Feature: Punctuation counts
         for c in '!?':
@@ -274,7 +260,7 @@ class FeaturesWrapper:
         if contains_mention: features['contains_mention'] = 1
 
 
-        return features
+        #return features
 
 
         # Feature: Bigram Tokens
@@ -303,6 +289,7 @@ class FeaturesWrapper:
             features[( 'bigram_tok',(t1,t2))] = score
             features[('sbigram_tok',sbigram)] = score
 
+        return features
 
 
         # Feature: Trigram Tokens
@@ -325,29 +312,12 @@ class FeaturesWrapper:
             features[('trigram_tok',trigram)] = 1
             #features[('strigram_tok',strigram)] = 1
 
+        return features
 
         # Feature: ark_tweet features (cached based on unescaped text)
         if enabled_modules['ark_tweet']:
             ark_feats = self.ark_tweet.features(tweet)
             features.update(ark_feats)
-
-
-        '''
-        # Feature: twitter_data features
-        if enabled_modules['twitter_data']:
-            tdata_feats = self.twitter_data.features(sid)
-            features.update(tdata_feats)
-
-
-        # Feature: URL Features
-        if enabled_modules['url']:
-            urls = [  w  for  w  in  phrase  if  utilities.is_url(w)  ]
-            for url in urls:
-                feats = self.url.features(url)
-                features.update(feats)
-
-
-        '''
 
 
         return features

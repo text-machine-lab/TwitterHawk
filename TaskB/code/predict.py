@@ -97,13 +97,10 @@ def predict(X, clf, vec, feat_obj=None):
     predict()
     """
 
-    #'''
     # Data -> features
     if feat_obj == None:
         feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
-    #'''
-    #feats = []
 
     return predict_vectorized(feats, clf, vec)
 
@@ -112,60 +109,11 @@ def predict(X, clf, vec, feat_obj=None):
 def predict_vectorized(feats, clf, vec):
 
     # Vectorize feature dictionary
-    # NOTE: do not fit() during predicting
-    #'''
     vectorized = vec.transform(feats)
     norm_mat( vectorized , axis=0 , copy=False )
 
-    confidences = clf.decision_function(vectorized)
     labels = clf.predict(vectorized)
     labels = [ reverse_labels_map[y] for y in labels ]
-
-    with open('stuff-a','wb') as f:
-        pickle.dump(confidences,f)
-    with open('stuff-b','wb') as f:
-        pickle.dump(labels,f)
-    #'''
-
-    '''
-    with open('stuff-a','rb') as f:
-        confidences = pickle.load(f)
-    with open('stuff-b','rb') as f:
-        labels = pickle.load(f)
-    '''
-
-    # Adjust edge cases of negative/neutrals
-    adjusted = []
-    for l,c in zip(labels,confidences):
-        if l == 'negative':
-            # Bias predictions toward neutral unless very confident
-            if False: #((c[1]-c[2]) < 1) and (c[2] > 0):
-            #if ((c[1]-c[2]) < 1) and (c[2] > 0):
-                adjusted.append('neutral')
-            else:
-                #print c, '\t', c[1] - c[2]
-                adjusted.append(l)
-        else:
-            adjusted.append(l)
-
-    labels = adjusted
-
-
-    #print '\n\n'
-
-    #print clf
-    #print '\n\n'
-    #for k,v in vars(clf).items():
-    #    print k
-    #    print '\t', v
-    #    print
-    #print
-
-    #print '\n\n'
-
-    #print clf.decision_function(vectorized)
-
-    #print '\n\n'
 
     return labels
 
