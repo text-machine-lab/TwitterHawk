@@ -43,3 +43,7 @@ Task B
     $ python train.py      # takes about 70s for me
     $ python predict.py    # takes about 30s for me
 
+
+
+W. Boag, P. Potash, A. Rumshisky. TwitterHawk: A Feature Bucket Approach to Sentiment Analysis, In Proceedings of the 9th international workshop on Semantic Evaluation Exercises (SemEval-2015), June 2015, Denver, Colorado, USA.
+http://www.cs.uml.edu/~wboag/research/publications/wboag-twitterhawk.pdf
