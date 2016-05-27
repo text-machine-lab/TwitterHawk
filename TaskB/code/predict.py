@@ -45,6 +45,12 @@ def main():
     )
 
 
+    parser.add_argument("-p",
+        dest = "prob",
+        help = "State whether you want class probabilities, any non empty string",
+    )
+
+
     # Parse the command line arguments
     args = parser.parse_args()
 
@@ -56,7 +62,10 @@ def main():
     txt_files  = glob.glob(args.txt)
     model_path = args.model
     out_dir    = args.out
-
+    if args.prob != '':
+        prob = True
+    else:
+        prob = False
 
     # Available data
     if not txt_files:
@@ -80,7 +89,7 @@ def main():
         #X = normalize_data_matrix(XNotNormalized)
 
         # Predict
-        labels = predict( X, clf, vec )
+        labels = predict( X, clf, vec, prob=prob )
 
         # output predictions
         outfile  = os.path.join(out_dir, os.path.basename(pfile))
@@ -88,14 +97,16 @@ def main():
 
 
 
-
-def predict(X, clf, vec, feat_obj=None):
+def predict(X, clf, vec, feat_obj=None, prob=False):
     # Data -> features
     if feat_obj == None:
         feat_obj = FeaturesWrapper()
     feats  = feat_obj.extract_features(X)
 
-    return predict_vectorized(feats, clf, vec)
+    if prob:
+        return predict_probs_vectorized(feats, clf, vec)
+    else:
+        return predict_vectorized(feats, clf, vec)
 
 
 
@@ -108,6 +119,47 @@ def predict_vectorized(feats, clf, vec):
 
     return labels
 
+def predict_probs_vectorized(feats, clf, vec):
+    # Vectorize feature dictionary
+    vectorized = vec.transform(feats)
+
+    label_probs = clf.decision_function(vectorized)
+    #labels = [ reverse_labels_map[y] for y in labels ]
+    label_probs_list = []
+    for i in range(label_probs.shape[0]):
+        probs_list = list( label_probs[i][:] )
+        str_list = [str(p) for p in probs_list]
+        label_probs_list.append( '\t'.join(str_list) )
+
+    return label_probs_list
+
+class TwitterHawk(object):
+    def __init__(self, model_path):
+    # Load model
+        with open(model_path+'.model', 'rb') as fid:
+            self.clf = pickle.load(fid)
+        with open(model_path+'.dict', 'rb') as fid:
+            self.vec = pickle.load(fid)
+        self.feat_obj = FeaturesWrapper()
+    def predict(self, X, predict_type='label'):
+    # Data -> features
+        #feat_obj = FeaturesWrapper()
+        feats  = self.feat_obj.extract_features(X)
+        if predict_type == 'label':
+            return self.predict_vectorized(feats)
+        elif predict_type == 'probs':
+            return self.predict_probs_vectorized(feats)
+
+    def predict_probs_vectorized(self, feats):
+        vectorized = self.vec.transform(feats)
+
+        return self.clf.decision_function(vectorized)
+
+    def predict_vectorized(self, feats):
+        vectorized = self.vec.transform(feats)
+        labels = self.clf.predict(vectorized)
+        labels = [ reverse_labels_map[y] for y in labels ]
+        return labels
 
 
 if __name__ == '__main__':

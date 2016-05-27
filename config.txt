@@ -1,4 +1,4 @@
-lexicons     None
-hashtag      /data1/wboag/hawk/TwitterHawk/tools/hashtag
-caches       /data1/wboag/hawk/TwitterHawk/tools/caches
-ark_tweet    /data1/wboag/hawk/TwitterHawk/tools/ark_tweet_nlp_python
+lexicons     /data1/nlp-data/twitter/data/lexicons/
+hashtag      /data1/wboag/biscuit/TwitterHawk/TaskB/etc/hashtag
+caches       /data1/wboag/biscuit/TwitterHawk/caches
+ark_tweet    /data1/nlp-data/twitter/tools/ark_tweet_nlp_python

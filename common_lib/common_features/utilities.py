@@ -217,12 +217,12 @@ def normalize_phrase(phrase, stem=False):
 
             # TODO - move about punctuation check
             # Hashtag
-            elif '#' in word:
-                matches = w.split('#')
-                tok = []
-                if matches[0]: tok.append(matches[0])
-                for ht in matches[1:]:
-                    if ht: tok.append('#'+ht)
+            #elif '#' in word:
+            #    matches = w.split('#')
+            #    tok = []
+            #    if matches[0]: tok.append(matches[0])
+            #    for ht in matches[1:]:
+            #        if ht: tok.append('#'+ht)
 
             # URL
             elif is_url(word):
