@@ -32,7 +32,7 @@ else:
 
 # Hand annotated hashtags
 annotations = {}
-with open('/data1/nlp-data/twitter/tools/hashtag/ht-expansions.txt', 'r') as f:
+with open(os.path.join(enabled_modules['hashtag'], 'ht-expansions.txt'), 'r') as f:
     for line in f.readlines():
         ht,expansion = line.strip('\n').split(' || ')
         annotations[ht] = expansion

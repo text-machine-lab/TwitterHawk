@@ -33,7 +33,7 @@ neg_words  = frozenset(['no', 'not', 'none', 'nobody', 'nothing',
 
 # Stop words
 stop_words = set()
-with open('/data1/nlp-data/twitter/tools/stop-words.txt', 'r') as f:
+with open(enabled_modules['stopwords'], 'r') as f:
     for line in f.readlines():
         if line == '\n': continue
         stop_words.add(line.strip())

@@ -11,7 +11,7 @@ import spell
 sources = os.getenv('BISCUIT_DIR')
 if sources not in sys.path: sys.path.append(sources)
 from common_lib.common_features import utilities
-
+from common_lib.read_config import enabled_modules
 
 
 # Global resources
@@ -25,7 +25,7 @@ stop_words = set()
 
 #'''
 # Read hard-coded stop words
-with open('/data1/nlp-data/twitter/tools/stop-words.txt','r') as f:
+with open(enabled_modules['stopwords'],'r') as f:
     for line in f.readlines():
         if line != '\n':
             stop_words.add(line.strip('\n'))

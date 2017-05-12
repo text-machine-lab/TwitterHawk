@@ -49,6 +49,9 @@ class Cache:
         return self.cache.has_key(skey) or self.new.has_key(key)
 
     def add_map(self, key, value):
+        if not self.enabled_cache:
+            return
+
         skey = key
         #skey = unicode(key.decode('utf-8'))
         self.new[ skey ] = value

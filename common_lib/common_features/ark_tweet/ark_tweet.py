@@ -25,11 +25,12 @@ from common_lib.cache import Cache
 from common_lib.read_config import enabled_modules
 
 
+run_tagger_cmd = 'java -XX:ParallelGCThreads=2 -Xmx500m -jar ark-tweet-nlp-0.3.2.jar'
 ark_sources = enabled_modules['ark_tweet']
 if ark_sources:
     if ark_sources not in sys.path: sys.path.append(ark_sources)
     import CMUTweetTagger
-
+    run_tagger_cmd = 'java -XX:ParallelGCThreads=2 -Xmx500m -jar {0}'.format(os.path.join(enabled_modules['ark_tweet'], 'ark-tweet-nlp-0.3.2.jar'))
 
 
 class ArkTweetNLP:
@@ -68,8 +69,11 @@ class ArkTweetNLP:
 
         data = [self.normalizeKey(twt) for twt in set(original)]
 
-        # Tag all uncached data
-        uncached = [ twt for twt in data if not self.cache.has_key(twt) ]
+        if enabled_modules['caches'] is not None:
+            # Tag all uncached data
+            uncached = [ twt for twt in data if not self.cache.has_key(twt) ]
+        else:
+            uncached = data
 
         #print uncached
         #print 'len     : ', len(uncached)
@@ -77,16 +81,23 @@ class ArkTweetNLP:
         #for twt in uncached: print '\t', twt
         #print '\n\n\n'
 
+        partial = []
         if uncached:
             print 'uncached: ', len(uncached)
-            partial = CMUTweetTagger.runtagger_parse(uncached)
+            partial = CMUTweetTagger.runtagger_parse(uncached, run_tagger_cmd=run_tagger_cmd)
             print 'partial: ', len(partial)
-            for twt,tag in zip(uncached,partial):
-                #print 'adding: ', twt
-                self.cache.add_map(twt, tag)
+
+            if enabled_modules['caches'] is not None:
+                for twt, tag in zip(uncached, partial):
+                    #print 'adding: ', twt
+                    self.cache.add_map(twt, tag)
+
 
         # Lookup all tags
-        tagged = [ self.cache.get_map(twt) for twt in data ]
+        if enabled_modules['caches'] is not None:
+            tagged = [ self.cache.get_map(twt) for twt in data ]
+        else:
+            tagged = partial
 
         #print 'TAGGED DATA'
         #print tagged
@@ -94,7 +105,7 @@ class ArkTweetNLP:
         # Store the data in the object
         self._toks = {}
         self._pos  = {}
-        for twt,tags in zip(data,tagged):
+        for twt,tags in zip(data, tagged):
 
             # Last step of splitting compund words
             newToks,newTags = self.post_process_tokenize(tags)

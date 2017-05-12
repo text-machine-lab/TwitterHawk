@@ -1,0 +1,8 @@
+beautifulsoup4
+nltk
+pyenchant
+numpy
+twitter
+scipy
+scikit-learn
+nose

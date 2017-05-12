@@ -35,7 +35,7 @@ class SpellChecker:
 
         # Common abbreviations and mistakes
         self.common = {}
-        abbrevs = os.path.join('/data1/nlp-data/twitter/tools/spell/abbrv.txt')
+        abbrevs = os.path.join(enabled_modules['spell'], 'abbrv.txt')
         with open(abbrevs,'r') as f:
             for line in f.readlines():
                 if line == '\n': continue
@@ -175,10 +175,11 @@ class SpellChecker:
                         '''
 
                         # good prediction?
-                        if edit_distance(w,possible[0]) <= 2:
-                            self.cache.add_map(key,possible)
-                        else:
-                            self.cache.add_map(key,w)
+                        if enabled_modules['caches'] is not None:
+                            if edit_distance(w,possible[0]) <= 2:
+                                self.cache.add_map(key,possible)
+                            else:
+                                self.cache.add_map(key,w)
 
                     # lookup cached spell corrections
                     else:
@@ -198,7 +199,8 @@ class SpellChecker:
         corrected = [ choices[0] for choices in cands ]
 
         # memoize
-        self.cache.add_map(key,corrected)
+        if enabled_modules['caches'] is not None:
+            self.cache.add_map(key, corrected)
 
         return corrected
 

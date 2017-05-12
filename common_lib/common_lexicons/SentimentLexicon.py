@@ -95,12 +95,17 @@ class SentimentLexicon:
             print >>sys.stderr, 'ERROR: Unable to read pairs from lexicon: ', lex_name
 
 
+    def _lookup(self, key, data):
+        if key in data:
+            return data[key]
+        else:
+            return SentimentTriple(0,0,0)
 
     def lookupUnigram(self, unigram):
-        return self._unigrams[unigram]
+        return self._lookup(unigram, self._unigrams)
 
     def lookupBigram(self, bigram):
-        return self._bigrams[bigram]
+        return self._lookup(bigram, self._bigrams)
 
     def lookupPair(self, pair):
-        return self._pairs[pair]
+        return self._lookup(pair, self._pairs)

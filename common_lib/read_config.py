@@ -18,7 +18,7 @@ filename = os.path.join( base_dir, 'config.txt' )
 
 
 enabled_modules = {}
-module_list = [ 'twitter_nlp', 'twitter_data', 'lexicons', 'hashtag', 'url', 'caches', 'ark_tweet', 'ukb_wsd' ]
+module_list = [ 'twitter_nlp', 'lexicons', 'hashtag', 'caches', 'ark_tweet', 'twitter_data', 'ukb_wsd', 'url', 'stopwords', 'spell' ]
 
 with open(filename, 'r') as f:
 

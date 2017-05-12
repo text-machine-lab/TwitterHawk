@@ -1,4 +1,7 @@
-lexicons     /data1/nlp-data/twitter/data/lexicons/
-hashtag      /data1/wboag/biscuit/TwitterHawk/TaskB/etc/hashtag
-caches       /data1/wboag/biscuit/TwitterHawk/caches
-ark_tweet    /data1/nlp-data/twitter/tools/ark_tweet_nlp_python
+lexicons     ./resources/lexicons/
+hashtag      ./tools/hashtag
+caches       None
+ark_tweet    ./tools/ark-tweet-nlp-0.3.2
+stopwords    ./resources/stop-words.txt
+twitter_data ./resources/data
+spell        ./resources/spell

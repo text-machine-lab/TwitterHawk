@@ -58,7 +58,7 @@ class FeaturesWrapper:
             self.ark_tweet = None
 
         # Count all token frequencies
-        tf_idf._build_dictionary(self.ark_tweet, '/data1/nlp-data/twitter/data/etc/')
+        tf_idf._build_dictionary(self.ark_tweet, enabled_modules['twitter_data'])
 
         # Spelling correction
         self.speller = spell.SpellChecker()
